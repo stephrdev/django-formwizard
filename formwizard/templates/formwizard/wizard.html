@@ -1,0 +1,8 @@
+{% load i18n %}
+{% csrf_token %}
+{{ form.as_p }}
+{% if form_prev_step %}
+<button name="form_prev_step" value="{{ form_first_step }}">{% trans "first step" %}</button>
+<button name="form_prev_step" value="{{ form_prev_step }}">{% trans "prev step" %}</button>
+{% endif %}
+<input type="submit" name="submit" value="{% trans "submit" %}" />
