@@ -84,6 +84,15 @@ class WizardTests(object):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['form_list'], [{'name': u'Pony', 'thirsty': True}, {'address1': u'123 Main St', 'address2': u'Djangoland'}, {'random_crap': u'blah blah'}])
 
+    def test_cleaned_data(self):
+        response = self.client.get(self.wizard_url)
+        response = self.client.post(self.wizard_url, self.wizard_step_data[0])
+        response = self.client.post(self.wizard_url, self.wizard_step_data[1])
+        response = self.client.post(self.wizard_url, self.wizard_step_data[2])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['all_cleaned_data'], {'name': u'Pony', 'thirsty': True, 'address1': u'123 Main St', 'address2': u'Djangoland', 'random_crap': u'blah blah'})
+
+
 class SessionWizardTests(TestCase, WizardTests):
     wizard_url = '/wiz_session/'
 

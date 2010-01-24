@@ -16,5 +16,5 @@ class Page3(forms.Form):
     
 class ContactWizard(FormWizard):
     def done(self, request, form_list):
-        c = Context({'form_list': [x.cleaned_data for x in form_list]})
+        c = Context({'form_list': [x.cleaned_data for x in form_list], 'all_cleaned_data': self.get_all_cleaned_data()})
         return HttpResponse(Template('').render(c))

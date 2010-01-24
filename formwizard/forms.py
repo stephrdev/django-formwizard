@@ -87,6 +87,14 @@ class FormWizard(object):
     def get_form_step_data(self, form):
         return dict([(form.add_prefix(i), form.cleaned_data[i]) for i in form.cleaned_data.keys()])
 
+    def get_all_cleaned_data(self):
+        cleaned_dict = {}
+        for form_key in self.form_list.keys():
+            form_obj = self.get_form(step=form_key, data=self.storage.get_step_data(form_key))
+            if form_obj.is_valid():
+                cleaned_dict.update(form_obj.cleaned_data)
+        return cleaned_dict
+
     def determine_step(self):
         return self.storage.get_current_step() or self.get_first_step()
 
