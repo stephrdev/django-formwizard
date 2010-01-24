@@ -1,10 +1,9 @@
 import re
 from django.test import TestCase, Client
 
-class WizardTests(TestCase):
+class WizardTests(object):
     urls = 'formwizard.tests.wizardtests.urls'
 
-    wizard_url = '/wiz/'
     wizard_step_data = (
         {
             'form1-name': 'Pony',
@@ -84,3 +83,9 @@ class WizardTests(TestCase):
         response = self.client.post(self.wizard_url, self.wizard_step_data[2])
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['form_list'], [{'name': u'Pony', 'thirsty': True}, {'address1': u'123 Main St', 'address2': u'Djangoland'}, {'random_crap': u'blah blah'}])
+
+class SessionWizardTests(TestCase, WizardTests):
+    wizard_url = '/wiz_session/'
+
+class CookieWizardTests(TestCase, WizardTests):
+    wizard_url = '/wiz_cookie/'

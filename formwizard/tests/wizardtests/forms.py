@@ -1,5 +1,5 @@
 from django import forms
-from formwizard.forms import SessionFormWizard
+from formwizard.forms import FormWizard
 from django.http import HttpResponse
 from django.template import Template, Context
 
@@ -14,7 +14,7 @@ class Page2(forms.Form):
 class Page3(forms.Form):
     random_crap = forms.CharField(max_length=100)
     
-class ContactWizard(SessionFormWizard):
+class ContactWizard(FormWizard):
     def done(self, request, form_list):
         c = Context({'form_list': [x.cleaned_data for x in form_list]})
         return HttpResponse(Template('').render(c))
