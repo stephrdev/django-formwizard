@@ -47,3 +47,6 @@ class SessionStorage(BaseStorage):
 
     def reset(self):
         return self.init_storage()
+
+    def update_response(self, response):
+        return response

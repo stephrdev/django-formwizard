@@ -25,22 +25,27 @@ class FormWizard(object):
 
     @csrf_protect
     def __call__(self, request, *args, **kwargs):
-        self.current_request = request
-        self.storage = get_storage(self.storage_name, self.get_wizard_name(), request)
+        self.request = request
+        self.storage = get_storage(self.storage_name, self.get_wizard_name(), self.request)
+        response = self.process_request(*args, **kwargs)
+        response = self.storage.update_response(response)
 
+        return response
+
+    def process_request(self, *args, **kwargs):
         if 'extra_context' in kwargs:
             self.update_extra_context(kwargs['extra_context'])
 
-        if request.method == 'GET':
+        if self.request.method == 'GET':
             self.reset_wizard()
             self.storage.set_current_step(self.get_first_step())
             return self.render(self.get_form())
         else:
-            if request.POST.has_key('form_prev_step') and self.form_list.has_key(request.POST['form_prev_step']):
-                self.storage.set_current_step(request.POST['form_prev_step'])
+            if self.request.POST.has_key('form_prev_step') and self.form_list.has_key(self.request.POST['form_prev_step']):
+                self.storage.set_current_step(self.request.POST['form_prev_step'])
                 form = self.get_form(data=self.storage.get_step_data(self.determine_step()))
             else:
-                form = self.get_form(data=request.POST)
+                form = self.get_form(data=self.request.POST)
 
                 if form.is_valid():
                     self.storage.set_step_data(self.determine_step(), self.process_step(form))
@@ -52,7 +57,7 @@ class FormWizard(object):
                             if not form_obj.is_valid():
                                 return self.render_revalidation_failure(form_key, form_obj)
                             final_form_list.append(form_obj)
-                        return self.done(self.current_request, final_form_list)
+                        return self.done(self.request, final_form_list)
                     else:
                         next_step = self.get_next_step()
                         new_form = self.get_form(next_step, data=self.storage.get_step_data(next_step))
@@ -148,7 +153,7 @@ class FormWizard(object):
             'form_step0': self.get_step_index(),
             'form_step_count': self.num_steps,
             'form': form,
-        }, context_instance=RequestContext(self.current_request))
+        }, context_instance=RequestContext(self.request))
 
     def done(self, request, form_list):
         raise NotImplementedError("Your %s class has not defined a done() method, which is required." % self.__class__.__name__)
@@ -156,3 +161,7 @@ class FormWizard(object):
 class SessionFormWizard(FormWizard):
     def __init__(self, form_list, initial_list={}):
         super(SessionFormWizard, self).__init__('formwizard.storage.session.SessionStorage', form_list, initial_list)
+
+class CookieFormWizard(FormWizard):
+    def __init__(self, form_list, initial_list={}):
+        super(CookieFormWizard, self).__init__('formwizard.storage.cookie.CookieStorage', form_list, initial_list)
