@@ -32,7 +32,7 @@ class FormWizard(object):
             self.update_extra_context(kwargs['extra_context'])
 
         if request.method == 'GET':
-            self.storage.reset()
+            self.reset_wizard()
             self.storage.set_current_step(self.get_first_step())
             return self.render(self.get_form())
         else:
@@ -120,6 +120,9 @@ class FormWizard(object):
 
     def get_wizard_name(self):
         return self.__class__.__name__
+
+    def reset_wizard(self):
+        self.storage.reset()
 
     def get_template(self):
         return 'formwizard/wizard.html'
