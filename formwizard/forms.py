@@ -52,7 +52,7 @@ class FormWizard(object):
                             if not form_obj.is_valid():
                                 return self.render_revalidation_failure(form_key, form_obj)
                             final_form_list.append(form_obj)
-                        return self.done(final_form_list)
+                        return self.done(self.current_request, final_form_list)
                     else:
                         next_step = self.get_next_step()
                         new_form = self.get_form(next_step, data=self.storage.get_step_data(next_step))
@@ -147,7 +147,7 @@ class FormWizard(object):
             'form': form,
         }, context_instance=RequestContext(self.current_request))
 
-    def done(self, form_list):
+    def done(self, request, form_list):
         raise NotImplementedError("Your %s class has not defined a done() method, which is required." % self.__class__.__name__)
 
 class SessionFormWizard(FormWizard):
