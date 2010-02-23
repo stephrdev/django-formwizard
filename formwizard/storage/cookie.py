@@ -2,9 +2,11 @@ import hmac
 
 from django.conf import settings
 from django.core.exceptions import SuspiciousOperation
-from django.utils.hashcompat import sha_hmac
+from django.utils.hashcompat import sha_constructor
 from django.utils import simplejson as json
 from formwizard.storage.base import BaseStorage
+
+sha_hmac = sha_constructor
 
 class CookieStorage(BaseStorage):
     step_cookie_key = 'step'
