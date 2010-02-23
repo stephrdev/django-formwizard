@@ -2,7 +2,6 @@ from django.utils.datastructures import SortedDict
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from formwizard.storage import get_storage
-from django.views.decorators.csrf import csrf_protect
 
 class FormWizard(object):
     def __init__(self, storage, form_list, initial_list={}):
@@ -23,7 +22,6 @@ class FormWizard(object):
     def __repr__(self):
         return 'step: %s\nform_list: %s\ninitial_list: %s' % (self.step, self.form_list, self.initial_list)
 
-    @csrf_protect
     def __call__(self, request, *args, **kwargs):
         self.request = request
         self.storage = get_storage(self.storage_name, self.get_wizard_name(), self.request)
