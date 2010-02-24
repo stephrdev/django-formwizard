@@ -37,6 +37,7 @@ class WizardTests(object):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['form_step'], 'form1')
         self.assertEqual(response.context['form_step0'], 0)
+        self.assertEqual(response.context['form_step1'], 1)
         self.assertEqual(response.context['form_last_step'], 'form4')
         self.assertEqual(response.context['form_prev_step'], None)
         self.assertEqual(response.context['form_next_step'], 'form2')

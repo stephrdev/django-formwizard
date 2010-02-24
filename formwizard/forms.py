@@ -171,7 +171,8 @@ class FormWizard(object):
             'form_last_step': self.get_last_step(),
             'form_prev_step': self.get_prev_step(),
             'form_next_step': self.get_next_step(),
-            'form_step0': self.get_step_index(),
+            'form_step0': int(self.get_step_index()),
+            'form_step1': int(self.get_step_index()) + 1,
             'form_step_count': self.num_steps,
             'form': form,
         }, context_instance=RequestContext(self.request))
