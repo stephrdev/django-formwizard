@@ -102,7 +102,10 @@ class FormWizard(object):
         for form_key in self.form_list.keys():
             form_obj = self.get_form(step=form_key, data=self.storage.get_step_data(form_key))
             if form_obj.is_valid():
-                cleaned_dict.update(form_obj.cleaned_data)
+                if isinstance(form_obj.cleaned_data, list):
+                    cleaned_dict.update({'formset-%s' % form_key: form_obj.cleaned_data})
+                else:
+                    cleaned_dict.update(form_obj.cleaned_data)
         return cleaned_dict
 
     def determine_step(self):
