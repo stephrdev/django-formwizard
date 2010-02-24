@@ -83,7 +83,7 @@ class FormWizard(object):
         return self.render(form)
 
     def get_form_step_data(self, form):
-        return dict([(form.add_prefix(i), form.cleaned_data[i]) for i in form.cleaned_data.keys()])
+        return form.data
 
     def get_all_cleaned_data(self):
         cleaned_dict = {}
