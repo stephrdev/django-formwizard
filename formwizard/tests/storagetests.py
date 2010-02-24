@@ -1,6 +1,8 @@
 from django.http import HttpRequest
 from django.conf import settings
 from django.utils.importlib import import_module
+from django.contrib.auth.models import User
+from datetime import datetime
 
 def get_request():
     request = HttpRequest()
@@ -9,6 +11,9 @@ def get_request():
     return request
 
 class TestStorage(object):
+    def setUp(self):
+        self.testuser, created = User.objects.get_or_create(username='testuser1')
+
     def test_current_step(self):
         request = get_request()
         storage = self.get_storage()('wizard1', request)
@@ -30,7 +35,7 @@ class TestStorage(object):
         request = get_request()
         storage = self.get_storage()('wizard1', request)
         step1 = 'start'
-        step_data1 = {'field1': 'data1', 'field2': 'data2'}
+        step_data1 = {'field1': 'data1', 'field2': 'data2', 'field3': datetime.now(), 'field4': self.testuser}
 
         self.assertEqual(storage.get_step_data(step1), None)
 
@@ -47,7 +52,7 @@ class TestStorage(object):
     def test_extra_context(self):
         request = get_request()
         storage = self.get_storage()('wizard1', request)
-        extra_context = {'key1': 'data1', 'key2': 'data2'}
+        extra_context = {'key1': 'data1', 'key2': 'data2', 'key3': datetime.now(), 'key4': self.testuser}
 
         self.assertEqual(storage.get_extra_context_data(), None)
 

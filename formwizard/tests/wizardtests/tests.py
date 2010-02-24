@@ -1,5 +1,6 @@
 import re
 from django.test import TestCase, Client
+from django.contrib.auth.models import User
 
 class WizardTests(object):
     urls = 'formwizard.tests.wizardtests.urls'
@@ -20,6 +21,8 @@ class WizardTests(object):
 
     def setUp(self):
         self.client = Client()
+        self.testuser, created = User.objects.get_or_create(username='testuser1')
+        self.wizard_step_data[0]['form1-user'] = self.testuser.pk
 
     def test_initial_call(self):
         response = self.client.get(self.wizard_url)
@@ -37,7 +40,7 @@ class WizardTests(object):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['form_step'], 'form1')
-        self.assertEqual(response.context['form'].errors, {'name': [u'This field is required.']})
+        self.assertEqual(response.context['form'].errors, {'name': [u'This field is required.'], 'user': [u'This field is required.']})
 
     def test_form_post_success(self):
         response = self.client.post(self.wizard_url, self.wizard_step_data[0])
@@ -82,19 +85,21 @@ class WizardTests(object):
 
         response = self.client.post(self.wizard_url, self.wizard_step_data[2])
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['form_list'], [{'name': u'Pony', 'thirsty': True}, {'address1': u'123 Main St', 'address2': u'Djangoland'}, {'random_crap': u'blah blah'}])
+        self.assertEqual(response.context['form_list'], [{'name': u'Pony', 'thirsty': True, 'user': self.testuser}, {'address1': u'123 Main St', 'address2': u'Djangoland'}, {'random_crap': u'blah blah'}])
 
     def test_cleaned_data(self):
         response = self.client.get(self.wizard_url)
+        self.assertEqual(response.status_code, 200)
         response = self.client.post(self.wizard_url, self.wizard_step_data[0])
+        self.assertEqual(response.status_code, 200)
         response = self.client.post(self.wizard_url, self.wizard_step_data[1])
+        self.assertEqual(response.status_code, 200)
         response = self.client.post(self.wizard_url, self.wizard_step_data[2])
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['all_cleaned_data'], {'name': u'Pony', 'thirsty': True, 'address1': u'123 Main St', 'address2': u'Djangoland', 'random_crap': u'blah blah'})
+        self.assertEqual(response.context['all_cleaned_data'], {'name': u'Pony', 'thirsty': True, 'user': self.testuser, 'address1': u'123 Main St', 'address2': u'Djangoland', 'random_crap': u'blah blah'})
 
-
-class SessionWizardTests(TestCase, WizardTests):
+class SessionWizardTests(WizardTests, TestCase):
     wizard_url = '/wiz_session/'
 
-class CookieWizardTests(TestCase, WizardTests):
+class CookieWizardTests(WizardTests, TestCase):
     wizard_url = '/wiz_cookie/'

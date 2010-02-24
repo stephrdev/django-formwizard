@@ -2,9 +2,11 @@ from django import forms
 from formwizard.forms import FormWizard
 from django.http import HttpResponse
 from django.template import Template, Context
+from django.contrib.auth.models import User
 
 class Page1(forms.Form):
     name = forms.CharField(max_length=100)
+    user = forms.ModelChoiceField(queryset=User.objects.all())
     thirsty = forms.NullBooleanField()
 
 class Page2(forms.Form):
