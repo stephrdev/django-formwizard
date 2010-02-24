@@ -2,9 +2,10 @@ from django.utils.datastructures import SortedDict
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from formwizard.storage import get_storage
+from django import forms
 
 class FormWizard(object):
-    def __init__(self, storage, form_list, initial_list={}):
+    def __init__(self, storage, form_list, initial_list={}, instance_list={}):
         self.form_list = SortedDict()
         self.storage_name = storage
 
@@ -18,6 +19,7 @@ class FormWizard(object):
                 self.form_list[i] = form
 
         self.initial_list = initial_list
+        self.instance_list = instance_list
 
     def __repr__(self):
         return 'step: %s\nform_list: %s\ninitial_list: %s' % (self.step, self.form_list, self.initial_list)
@@ -63,7 +65,7 @@ class FormWizard(object):
                         return self.render(new_form)
             return self.render(form)
 
-    def get_form_prefix(self, step=None):
+    def get_form_prefix(self, step=None, form=None):
         if step is None:
             step = self.determine_step()
         return str(step)
@@ -71,10 +73,20 @@ class FormWizard(object):
     def get_form_initial(self, step):
         return self.initial_list.get(step, {})
 
+    def get_form_instance(self, step):
+        return self.instance_list.get(step, None)
+
     def get_form(self, step=None, data=None):
         if step is None:
             step = self.determine_step()
-        return self.form_list[step](data=data, prefix=self.get_form_prefix(step), initial=self.get_form_initial(step))
+        kwargs = {
+            'data': data,
+            'prefix': self.get_form_prefix(step, self.form_list[step]),
+            'initial': self.get_form_initial(step),
+        }
+        if issubclass(self.form_list[step], forms.ModelForm):
+            kwargs.update({'instance': self.get_form_instance(step)})
+        return self.form_list[step](**kwargs)
 
     def process_step(self, form):
         return self.get_form_step_data(form)
@@ -165,9 +177,9 @@ class FormWizard(object):
         raise NotImplementedError("Your %s class has not defined a done() method, which is required." % self.__class__.__name__)
 
 class SessionFormWizard(FormWizard):
-    def __init__(self, form_list, initial_list={}):
-        super(SessionFormWizard, self).__init__('formwizard.storage.session.SessionStorage', form_list, initial_list)
+    def __init__(self, *args, **kwargs):
+        super(SessionFormWizard, self).__init__('formwizard.storage.session.SessionStorage', *args, **kwargs)
 
 class CookieFormWizard(FormWizard):
-    def __init__(self, form_list, initial_list={}):
-        super(CookieFormWizard, self).__init__('formwizard.storage.cookie.CookieStorage', form_list, initial_list)
+    def __init__(self, *args, **kwargs):
+        super(CookieFormWizard, self).__init__('formwizard.storage.cookie.CookieStorage', *args, **kwargs)
