@@ -14,9 +14,9 @@ class FormWizard(object):
         for i in range(len(form_list)):
             form = form_list[i]
             if isinstance(form, tuple):
-                self.form_list[form[0]] = form[1]
+                self.form_list[unicode(form[0])] = form[1]
             else:
-                self.form_list[i] = form
+                self.form_list[unicode(i)] = form
 
         self.initial_list = initial_list
         self.instance_list = instance_list
@@ -37,33 +37,45 @@ class FormWizard(object):
             self.update_extra_context(kwargs['extra_context'])
 
         if self.request.method == 'GET':
-            self.reset_wizard()
-            self.storage.set_current_step(self.get_first_step())
-            return self.render(self.get_form())
+            return self.process_get_request(*args, **kwargs)
         else:
-            if self.request.POST.has_key('form_prev_step') and self.form_list.has_key(self.request.POST['form_prev_step']):
-                self.storage.set_current_step(self.request.POST['form_prev_step'])
-                form = self.get_form(data=self.storage.get_step_data(self.determine_step()))
-            else:
-                form = self.get_form(data=self.request.POST)
+            return self.process_post_request(*args, **kwargs)
 
-                if form.is_valid():
-                    self.storage.set_step_data(self.determine_step(), self.process_step(form))
+    def process_get_request(self, *args, **kwargs):
+        self.reset_wizard()
+        self.storage.set_current_step(self.get_first_step())
+        return self.render(self.get_form())
 
-                    if self.determine_step() == self.get_last_step():
-                        final_form_list = []
-                        for form_key in self.form_list.keys():
-                            form_obj = self.get_form(step=form_key, data=self.storage.get_step_data(form_key))
-                            if not form_obj.is_valid():
-                                return self.render_revalidation_failure(form_key, form_obj)
-                            final_form_list.append(form_obj)
-                        return self.done(self.request, final_form_list)
-                    else:
-                        next_step = self.get_next_step()
-                        new_form = self.get_form(next_step, data=self.storage.get_step_data(next_step))
-                        self.storage.set_current_step(next_step)
-                        return self.render(new_form)
-            return self.render(form)
+    def process_post_request(self, *args, **kwargs):
+        if self.request.POST.has_key('form_prev_step') and self.form_list.has_key(self.request.POST['form_prev_step']):
+            self.storage.set_current_step(self.request.POST['form_prev_step'])
+            form = self.get_form(data=self.storage.get_step_data(self.determine_step()))
+        else:
+            form = self.get_form(data=self.request.POST)
+
+            if form.is_valid():
+                self.storage.set_step_data(self.determine_step(), self.process_step(form))
+
+                if self.determine_step() == self.get_last_step():
+                    return self.render_done(form, *args, **kwargs)
+                else:
+                    return self.render_next_step(form, *args, **kwargs)
+        return self.render(form)
+
+    def render_next_step(self, form, *args, **kwargs):
+        next_step = self.get_next_step()
+        new_form = self.get_form(next_step, data=self.storage.get_step_data(next_step))
+        self.storage.set_current_step(next_step)
+        return self.render(new_form)
+
+    def render_done(self, form, *args, **kwargs):
+        final_form_list = []
+        for form_key in self.form_list.keys():
+            form_obj = self.get_form(step=form_key, data=self.storage.get_step_data(form_key))
+            if not form_obj.is_valid():
+                return self.render_revalidation_failure(form_key, form_obj)
+            final_form_list.append(form_obj)
+        return self.done(self.request, final_form_list)
 
     def get_form_prefix(self, step=None, form=None):
         if step is None:
