@@ -6,7 +6,7 @@ setup(
     description='A FormWizard for Django with multiple storage backends',
     author='Stephan Jaekel',
     author_email='steph@rdev.info',
-    url='http://bitbucket.org/stephrdev/django-formwizard/src/',
+    url='http://github.com/stephrdev/django-formwizard/',
     packages=find_packages(),
     classifiers=[
         'Development Status :: 3 - Alpha',
