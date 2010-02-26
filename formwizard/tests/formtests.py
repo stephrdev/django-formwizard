@@ -36,20 +36,20 @@ class TestWizard(FormWizard):
 class FormTests(TestCase):
     def test_form_init(self):
         testform = TestWizard('formwizard.storage.session.SessionStorage', [Step1, Step2])
-        self.assertEquals(testform.form_list, {0: Step1, 1: Step2})
+        self.assertEquals(testform.form_list, {u'0': Step1, u'1': Step2})
 
         testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', Step1), ('step2', Step2)])
-        self.assertEquals(testform.form_list, {'start': Step1, 'step2': Step2})
+        self.assertEquals(testform.form_list, {u'start': Step1, u'step2': Step2})
         
         testform = TestWizard('formwizard.storage.session.SessionStorage', [Step1, Step2, ('finish', Step3)])
-        self.assertEquals(testform.form_list, {0: Step1, 1: Step2, 'finish': Step3})
+        self.assertEquals(testform.form_list, {u'0': Step1, u'1': Step2, u'finish': Step3})
 
     def test_first_step(self):
         request = get_request()
 
         testform = TestWizard('formwizard.storage.session.SessionStorage', [Step1, Step2])
         response = testform(request)
-        self.assertEquals(testform.determine_step(), 0)
+        self.assertEquals(testform.determine_step(), u'0')
 
         testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', Step1), ('step2', Step2)])
         response = testform(request)
