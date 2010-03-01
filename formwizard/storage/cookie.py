@@ -25,7 +25,7 @@ class CookieStorage(BaseStorage):
         self.cookie_data = {
             self.step_cookie_key: None,
             self.step_data_cookie_key: {},
-            self.extra_context_cookie_key: None,
+            self.extra_context_cookie_key: {},
         }
         return True
 
@@ -44,7 +44,7 @@ class CookieStorage(BaseStorage):
         return True
 
     def get_extra_context_data(self):
-        return self.cookie_data[self.extra_context_cookie_key]
+        return self.cookie_data[self.extra_context_cookie_key] or {}
 
     def set_extra_context_data(self, extra_context):
         self.cookie_data[self.extra_context_cookie_key] = extra_context

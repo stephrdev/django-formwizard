@@ -169,7 +169,9 @@ class FormWizard(object):
         return self.storage.get_extra_context_data()
 
     def update_extra_context(self, new_context):
-        return self.storage.set_extra_context_data(self.get_extra_context().update(new_context))
+        context = self.get_extra_context()
+        context.update(new_context)
+        return self.storage.set_extra_context_data(context)
 
     def render(self, form):
         return self.render_template(form)

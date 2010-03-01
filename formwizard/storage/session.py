@@ -16,7 +16,7 @@ class SessionStorage(BaseStorage):
         self.request.session[self.prefix] = {
             self.step_session_key: None,
             self.step_data_session_key: {},
-            self.extra_context_session_key: None,
+            self.extra_context_session_key: {},
         }
         self.request.session.modified = True
         return True
@@ -38,7 +38,7 @@ class SessionStorage(BaseStorage):
         return True
 
     def get_extra_context_data(self):
-        return self.request.session[self.prefix][self.extra_context_session_key]
+        return self.request.session[self.prefix][self.extra_context_session_key] or {}
 
     def set_extra_context_data(self, extra_context):
         self.request.session[self.prefix][self.extra_context_session_key] = extra_context

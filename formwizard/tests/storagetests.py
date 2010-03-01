@@ -54,14 +54,14 @@ class TestStorage(object):
         storage = self.get_storage()('wizard1', request)
         extra_context = {'key1': 'data1', 'key2': 'data2', 'key3': datetime.now(), 'key4': self.testuser}
 
-        self.assertEqual(storage.get_extra_context_data(), None)
+        self.assertEqual(storage.get_extra_context_data(), {})
 
         storage.set_extra_context_data(extra_context)
         self.assertEqual(storage.get_extra_context_data(), extra_context)
 
         storage.reset()
-        self.assertEqual(storage.get_extra_context_data(), None)
+        self.assertEqual(storage.get_extra_context_data(), {})
 
         storage.set_extra_context_data(extra_context)
         storage2 = self.get_storage()('wizard2', request)
-        self.assertEqual(storage2.get_extra_context_data(), None)
+        self.assertEqual(storage2.get_extra_context_data(), {})
