@@ -104,6 +104,7 @@ class FormWizard(object):
         return self.get_form_step_data(form)
 
     def render_revalidation_failure(self, step, form):
+        self.storage.set_current_step(step)
         return self.render(form)
 
     def get_form_step_data(self, form):
