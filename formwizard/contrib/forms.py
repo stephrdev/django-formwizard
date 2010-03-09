@@ -46,6 +46,10 @@ class NamedUrlSessionFormWizard(SessionFormWizard):
         self.storage.set_current_step(next_step)
         return HttpResponseRedirect(reverse(self.url_name, kwargs={'step': next_step}))
 
+    def render_revalidation_failure(self, step, form):
+        self.storage.set_current_step(step)
+        return HttpResponseRedirect(reverse(self.url_name, kwargs={'step': self.storage.get_current_step()}))
+
     def render_done(self, *args, **kwargs):
         step_url = kwargs.get('step', None)
         if step_url <> self.done_step_name:
