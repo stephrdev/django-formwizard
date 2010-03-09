@@ -121,6 +121,13 @@ class FormWizard(object):
                     cleaned_dict.update(form_obj.cleaned_data)
         return cleaned_dict
 
+    def get_cleaned_data_for_step(self, step):
+        if self.form_list.has_key(step):
+            form_obj = self.get_form(step=step, data=self.storage.get_step_data(step))
+            if form_obj.is_valid():
+                return form_obj.cleaned_data
+        return None
+
     def determine_step(self):
         return self.storage.get_current_step() or self.get_first_step()
 
