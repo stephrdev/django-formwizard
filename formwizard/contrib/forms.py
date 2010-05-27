@@ -29,9 +29,10 @@ class NamedUrlSessionFormWizard(SessionFormWizard):
             step_url = kwargs.get('step', None)
             if step_url == self.done_step_name:
                 return self.render_done(self.get_form(step=self.get_last_step(), data=self.storage.get_step_data(self.get_last_step())), *args, **kwargs)
-            if step_url <> self.storage.get_current_step():
+            if step_url <> self.determine_step():
                 if self.form_list.has_key(step_url):
                     self.storage.set_current_step(step_url)
+                    return self.render(self.get_form(data=self.storage.get_step_data(self.storage.get_current_step())))
                 else:
                     self.storage.set_current_step(self.get_first_step())
                 return HttpResponseRedirect(reverse(self.url_name, kwargs={'step': self.storage.get_current_step()}))
