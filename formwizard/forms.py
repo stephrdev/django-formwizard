@@ -22,7 +22,8 @@ class FormWizard(object):
         self.instance_list = instance_list
 
     def __repr__(self):
-        return 'step: %s\nform_list: %s\ninitial_list: %s' % (self.step, self.form_list, self.initial_list)
+        return 'step: %s, form_list: %s, initial_list: %s' % (
+            self.determine_step(), self.form_list, self.initial_list)
 
     def __call__(self, request, *args, **kwargs):
         self.request = request
@@ -33,9 +34,6 @@ class FormWizard(object):
         return response
 
     def process_request(self, *args, **kwargs):
-        if 'extra_context' in kwargs:
-            self.update_extra_context(kwargs['extra_context'])
-
         if self.request.method == 'GET':
             return self.process_get_request(*args, **kwargs)
         else:
@@ -43,10 +41,17 @@ class FormWizard(object):
 
     def process_get_request(self, *args, **kwargs):
         self.reset_wizard()
+
+        if 'extra_context' in kwargs:
+            self.update_extra_context(kwargs['extra_context'])
+
         self.storage.set_current_step(self.get_first_step())
         return self.render(self.get_form())
 
     def process_post_request(self, *args, **kwargs):
+        if 'extra_context' in kwargs:
+            self.update_extra_context(kwargs['extra_context'])
+
         if self.request.POST.has_key('form_prev_step') and self.form_list.has_key(self.request.POST['form_prev_step']):
             self.storage.set_current_step(self.request.POST['form_prev_step'])
             form = self.get_form(data=self.storage.get_step_data(self.determine_step()))

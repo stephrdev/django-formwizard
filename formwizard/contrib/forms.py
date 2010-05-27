@@ -20,8 +20,12 @@ class NamedUrlSessionFormWizard(SessionFormWizard):
             if self.request.GET.has_key('reset'):
                 self.reset_wizard()
                 self.storage.set_current_step(self.get_first_step())
+            if 'extra_context' in kwargs:
+                self.update_extra_context(kwargs['extra_context'])
             return HttpResponseRedirect(reverse(self.url_name, kwargs={'step': self.determine_step()}))
         else:
+            if 'extra_context' in kwargs:
+                self.update_extra_context(kwargs['extra_context'])
             step_url = kwargs.get('step', None)
             if step_url == self.done_step_name:
                 return self.render_done(self.get_form(step=self.get_last_step(), data=self.storage.get_step_data(self.get_last_step())), *args, **kwargs)
