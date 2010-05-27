@@ -112,7 +112,23 @@ class WizardTests(object):
         self.assertEqual(response.status_code, 200)
         response = self.client.post(self.wizard_url, self.wizard_step_data[3])
         self.assertEqual(response.status_code, 200)
+
         self.assertEqual(response.context['all_cleaned_data'], {'name': u'Pony', 'thirsty': True, 'user': self.testuser, 'address1': u'123 Main St', 'address2': u'Djangoland', 'random_crap': u'blah blah', 'formset-form4': [{'random_crap': u'blah blah'}, {'random_crap': u'blah blah'}]})
+
+    def test_manipulated_data(self):
+        response = self.client.get(self.wizard_url)
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(self.wizard_url, self.wizard_step_data[0])
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(self.wizard_url, self.wizard_step_data[1])
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post(self.wizard_url, self.wizard_step_data[2])
+        self.assertEqual(response.status_code, 200)
+        self.client.cookies.pop('sessionid', None)
+        self.client.cookies.pop('formwizard_ContactWizard', None)
+        response = self.client.post(self.wizard_url, self.wizard_step_data[3])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context.get('form_step', None), 'form1')
 
 class SessionWizardTests(WizardTests, TestCase):
     wizard_url = '/wiz_session/'

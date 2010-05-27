@@ -1,5 +1,5 @@
 from django import forms
-from formwizard.forms import FormWizard
+from formwizard.contrib.forms import NamedUrlSessionFormWizard
 from django.http import HttpResponse
 from django.template import Template, Context
 from django.contrib.auth.models import User
@@ -19,7 +19,7 @@ class Page3(forms.Form):
 
 Page4 = formset_factory(Page3, extra=2)
 
-class ContactWizard(FormWizard):
+class ContactWizard(NamedUrlSessionFormWizard):
     def done(self, request, form_list):
         c = Context({'form_list': [x.cleaned_data for x in form_list], 'all_cleaned_data': self.get_all_cleaned_data()})
         for form in self.form_list.keys():
