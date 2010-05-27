@@ -23,3 +23,6 @@ class BaseStorage(object):
 
     def reset(self):
         raise NotImplementedError()
+
+    def update_response(self, response):
+        raise NotImplementedError()
