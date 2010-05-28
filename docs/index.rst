@@ -20,6 +20,7 @@ Contents:
     :maxdepth: 2
 
     gettingstarted
+    apireference
 
 Indices and tables
 ==================
