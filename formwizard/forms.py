@@ -3,6 +3,7 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from formwizard.storage import get_storage
 from django import forms
+import copy
 
 class FormWizard(object):
     """
@@ -53,11 +54,12 @@ class FormWizard(object):
         After processing the request using the `process_request` method, the
         response gets updated by the storage engine (for example add cookies).
         """
-        self.request = request
-        self.storage = get_storage(self.storage_name, self.get_wizard_name(), self.request)
-        response = self.process_request(*args, **kwargs)
-        response = self.storage.update_response(response)
 
+        instance = copy.copy(self)
+        instance.request = request
+        instance.storage = get_storage(instance.storage_name, instance.get_wizard_name(), instance.request)
+        response = instance.process_request(*args, **kwargs)
+        response = instance.storage.update_response(response)
         return response
 
     def process_request(self, *args, **kwargs):
