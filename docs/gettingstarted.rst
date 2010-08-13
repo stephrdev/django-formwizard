@@ -91,6 +91,69 @@ support/form.html
 -----------------
 
 .. code-block:: html
+
+    <html>
+        <head>
+            <title>Feedback</title>
+        </head>
+        <body>
+            <h1>We want your feedback!</h1>
+            <form action="." method="post">
+                {% csrf_token %}
+
+                {# check if the current step is a formset #}
+                {% if form.forms %}
+                    {# render the management form for formset #}
+                    {{ form.management_form }}
+
+                    {# render every form in the formset #}
+                    {% for formsetform in form.forms %}
+                        {{ formsetform.as_p }}
+                    {% endfor %}
+                {% else %}
+                    {{ form.as_p }}
+                {% endif %}
+
+                {# only show previous form and first form button when applicable #}
+                {% if form_prev_step %}
+                    <button name="form_prev_step" value="{{ form_first_step }}">first step</button>
+                    <button name="form_prev_step" value="{{ form_prev_step }}">previous step</button>
+                {% endif %}
+
+                <input type="submit" name="submit" value="submit" />
+            </form>
+        </body>
+    </html>
+
+If you don't use any formsets, you can simplify the template:
+
+.. code-block:: html
+
+    <html>
+        <head>
+            <title>Feedback</title>
+        </head>
+        <body>
+            <h1>We want your feedback!</h1>
+            <form action="." method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+
+                {# only show previous form and first form button when applicable #}
+                {% if form_prev_step %}
+                    <button name="form_prev_step" value="{{ form_first_step }}">first step</button>
+                    <button name="form_prev_step" value="{{ form_prev_step }}">previous step</button>
+                {% endif %}
+
+                <input type="submit" name="submit" value="submit" />
+            </form>
+        </body>
+    </html>
+
+You can also use the included template if you don't need to make any changes
+to the example above.
+
+.. code-block:: html
     
     <html>
         <head>
