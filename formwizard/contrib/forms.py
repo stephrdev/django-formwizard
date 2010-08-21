@@ -15,48 +15,69 @@ class NamedUrlSessionFormWizard(SessionFormWizard):
         super(NamedUrlSessionFormWizard, self).__init__(*args, **kwargs)
         assert not self.form_list.has_key(self.done_step_name), 'step name "%s" is reserved for the "done" view' % self.done_step_name
 
-    def process_get_request(self, *args, **kwargs):
+    def process_get_request(self, request, storage, *args, **kwargs):
         if not kwargs.has_key('step'):
-            if self.request.GET.has_key('reset'):
-                self.reset_wizard()
-                self.storage.set_current_step(self.get_first_step())
+            if request.GET.has_key('reset'):
+                self.reset_wizard(request, storage)
+                storage.set_current_step(self.get_first_step(request, storage))
             if 'extra_context' in kwargs:
-                self.update_extra_context(kwargs['extra_context'])
-            return HttpResponseRedirect(reverse(self.url_name, kwargs={'step': self.determine_step()}))
+                self.update_extra_context(request, storage,
+                    kwargs['extra_context'])
+            return HttpResponseRedirect(reverse(self.url_name,
+                kwargs={'step': self.determine_step(request, storage)}))
         else:
             if 'extra_context' in kwargs:
-                self.update_extra_context(kwargs['extra_context'])
+                self.update_extra_context(request, storage,
+                    kwargs['extra_context'])
             step_url = kwargs.get('step', None)
             if step_url == self.done_step_name:
-                return self.render_done(self.get_form(step=self.get_last_step(), data=self.storage.get_step_data(self.get_last_step())), *args, **kwargs)
-            if step_url <> self.determine_step():
+                return self.render_done(request, storage, 
+                    self.get_form(request, storage,
+                        step=self.get_last_step(request, storage),
+                        data=storage.get_step_data(
+                            self.get_last_step(request, storage))), **kwargs)
+            if step_url <> self.determine_step(request, storage):
                 if self.form_list.has_key(step_url):
-                    self.storage.set_current_step(step_url)
-                    return self.render(self.get_form(data=self.storage.get_step_data(self.storage.get_current_step())))
+                    storage.set_current_step(step_url)
+                    return self.render(request, storage,
+                        self.get_form(request, storage,
+                            data=storage.get_current_step_data()), **kwargs)
                 else:
-                    self.storage.set_current_step(self.get_first_step())
-                return HttpResponseRedirect(reverse(self.url_name, kwargs={'step': self.storage.get_current_step()}))
+                    storage.set_current_step(
+                        self.get_first_step(request, storage))
+                return HttpResponseRedirect(reverse(self.url_name, kwargs={
+                    'step': storage.get_current_step()
+                }))
             else:
-                return self.render(self.get_form(data=self.storage.get_step_data(self.storage.get_current_step())))
+                return self.render(request, storage,
+                    self.get_form(request, storage,
+                        data=storage.get_current_step_data()), **kwargs)
 
-    def process_post_request(self, *args, **kwargs):
-        if self.request.POST.has_key('form_prev_step') and self.form_list.has_key(self.request.POST['form_prev_step']):
-            self.storage.set_current_step(self.request.POST['form_prev_step'])
-            return HttpResponseRedirect(reverse(self.url_name, kwargs={'step': self.storage.get_current_step()}))
+    def process_post_request(self, request, storage, *args, **kwargs):
+        if request.POST.has_key('form_prev_step') and \
+            self.form_list.has_key(request.POST['form_prev_step']):
+            storage.set_current_step(request.POST['form_prev_step'])
+            return HttpResponseRedirect(reverse(self.url_name, kwargs={
+                'step': storage.get_current_step()
+            }))
         else:
-            return super(NamedUrlSessionFormWizard, self).process_post_request(*args, **kwargs)
+            return super(NamedUrlSessionFormWizard, self).process_post_request(request, storage, *args, **kwargs)
 
-    def render_next_step(self, form, *args, **kwargs):
-        next_step = self.get_next_step()
-        self.storage.set_current_step(next_step)
-        return HttpResponseRedirect(reverse(self.url_name, kwargs={'step': next_step}))
+    def render_next_step(self, request, storage, form, **kwargs):
+        next_step = self.get_next_step(request, storage)
+        storage.set_current_step(next_step)
+        return HttpResponseRedirect(reverse(self.url_name,
+            kwargs={'step': next_step}))
 
-    def render_revalidation_failure(self, step, form):
-        self.storage.set_current_step(step)
-        return HttpResponseRedirect(reverse(self.url_name, kwargs={'step': self.storage.get_current_step()}))
+    def render_revalidation_failure(self, request, storage, failed_step, form, **kwargs):
+        storage.set_current_step(failed_step)
+        return HttpResponseRedirect(reverse(self.url_name,
+            kwargs={'step': storage.get_current_step()}))
 
-    def render_done(self, *args, **kwargs):
+    def render_done(self, request, storage, form, **kwargs):
         step_url = kwargs.get('step', None)
         if step_url <> self.done_step_name:
-            return HttpResponseRedirect(reverse(self.url_name, kwargs={'step': self.done_step_name}))
-        return super(NamedUrlSessionFormWizard, self).render_done(*args, **kwargs)
+            return HttpResponseRedirect(reverse(self.url_name,
+                kwargs={'step': self.done_step_name}))
+        return super(NamedUrlSessionFormWizard, self).render_done(request,
+            storage, form, **kwargs)

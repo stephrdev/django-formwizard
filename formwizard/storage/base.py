@@ -12,6 +12,9 @@ class BaseStorage(object):
     def get_step_data(self, step):
         raise NotImplementedError()
 
+    def get_current_step_data(self):
+        raise NotImplementedError()
+
     def set_step_data(self, step, cleaned_data):
         raise NotImplementedError()
 

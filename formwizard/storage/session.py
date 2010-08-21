@@ -32,6 +32,9 @@ class SessionStorage(BaseStorage):
     def get_step_data(self, step):
         return self.request.session[self.prefix][self.step_data_session_key].get(step, None)
 
+    def get_current_step_data(self):
+        return self.get_step_data(self.get_current_step())
+
     def set_step_data(self, step, cleaned_data):
         self.request.session[self.prefix][self.step_data_session_key][step] = cleaned_data
         self.request.session.modified = True

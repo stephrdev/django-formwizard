@@ -18,14 +18,14 @@ class FeedbackStep3(forms.Form):
     message = forms.CharField(widget=forms.Textarea())
 
 class FeedbackWizard(SessionFormWizard):
-    def done(self, request, form_list):
+    def done(self, request, storage, form_list):
         return render_to_response(
             'testapp/done.html',
             {'form_list': [form.cleaned_data for form in form_list]},
             context_instance=RequestContext(request)
         )
 
-    def get_template(self):
+    def get_template(self, request, storage):
         return ['testapp/form.html',]
 
 feedback_form_instance = FeedbackWizard([FeedbackStep1, FeedbackStep2, \
