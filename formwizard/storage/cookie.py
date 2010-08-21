@@ -39,6 +39,9 @@ class CookieStorage(BaseStorage):
     def get_step_data(self, step):
         return self.cookie_data[self.step_data_cookie_key].get(step, None)
 
+    def get_current_step_data(self):
+        return self.get_step_data(self.get_current_step())
+
     def set_step_data(self, step, cleaned_data):
         self.cookie_data[self.step_data_cookie_key][step] = cleaned_data
         return True

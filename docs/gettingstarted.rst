@@ -54,14 +54,14 @@ The `done` method in this example will render the template `support/done.html` a
     from formwizard.forms import SessionFormWizard
 
     class FeedbackWizard(SessionFormWizard):
-        def done(self, request, form_list):
+        def done(self, request, storage, form_list):
             return render_to_response(
                 'support/done.html',
                 {'form_list': [form.cleaned_data for form in form_list]},
                 context_instance=RequestContext(request)
             )
 
-        def get_template(self):
+        def get_template(self, request, storage):
             return ['support/form.html',]
 
 Create the formwizard instance
