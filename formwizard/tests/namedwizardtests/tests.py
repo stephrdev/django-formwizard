@@ -182,18 +182,18 @@ class NamedFormTests(TestCase):
 
         testform = NamedUrlSessionFormWizard([('start', Step1), ('step2', Step2)], url_name='nwiz_session')
 
-        response = testform(request, step='form1', extra_context={'key1': 'value1'})
+        testform, response = testform.real_call(request, step='form1', extra_context={'key1': 'value1'})
         self.assertEqual(testform.get_extra_context(), {'key1': 'value1'})
 
         testform.reset_wizard()
 
-        response = testform(request, extra_context={'key2': 'value2'})
+        testform, response = testform.real_call(request, extra_context={'key2': 'value2'})
         self.assertEqual(testform.get_extra_context(), {'key2': 'value2'})
 
     def test_revalidation(self):
         request = get_request()
 
         testform = NamedUrlSessionFormWizard([('start', Step1), ('step2', Step2)], url_name='nwiz_session')
-        response = testform(request, step='done')
+        testform, response = testform.real_call(request, step='done')
         testform.render_done(None)
         self.assertEqual(testform.storage.get_current_step(), 'start')

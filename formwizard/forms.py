@@ -55,12 +55,17 @@ class FormWizard(object):
         response gets updated by the storage engine (for example add cookies).
         """
 
+        instance, response = self.real_call(request, *args, **kwargs)
+
+        return response
+
+    def real_call(self, request, *args, **kwargs):
         instance = copy.copy(self)
         instance.request = request
         instance.storage = get_storage(instance.storage_name, instance.get_wizard_name(), instance.request)
         response = instance.process_request(*args, **kwargs)
         response = instance.storage.update_response(response)
-        return response
+        return instance, response
 
     def process_request(self, *args, **kwargs):
         """
