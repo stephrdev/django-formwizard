@@ -11,7 +11,7 @@ class FormWizard(object):
     an instance.
     """
 
-    def __init__(self, storage, form_list, initial_list={}, instance_list={}):
+    def __init__(self, storage, form_list, initial_list={}, instance_list={}, condition_list={}):
         """
         Creates a form wizard instance. `storage` is the storage backend, the
         place where step data and current state of the form gets saved.
@@ -40,6 +40,17 @@ class FormWizard(object):
 
         self.initial_list = initial_list
         self.instance_list = instance_list
+        self.condition_list = condition_list
+
+    def get_form_list(self, request, storage):
+        form_list = SortedDict()
+        for form_key, form_class in self.form_list.items():
+            condition = self.condition_list.get(form_key, True)
+            if callable(condition):
+                condition = condition(self, request, storage)
+            if condition:
+                form_list[form_key] = form_class
+        return form_list
 
     def __repr__(self):
         return '%s: form_list: %s, initial_list: %s' % (
@@ -102,7 +113,8 @@ class FormWizard(object):
                 kwargs['extra_context'])
 
         if request.POST.has_key('form_prev_step') and \
-            self.form_list.has_key(request.POST['form_prev_step']):
+            self.get_form_list(request, storage).has_key(
+            request.POST['form_prev_step']):
             storage.set_current_step(request.POST['form_prev_step'])
             form = self.get_form(request, storage, 
                 data=storage.get_step_data(
@@ -143,7 +155,7 @@ class FormWizard(object):
         call `done`.
         """
         final_form_list = []
-        for form_key in self.form_list.keys():
+        for form_key in self.get_form_list(request, storage).keys():
             form_obj = self.get_form(request, storage, step=form_key,
                 data=storage.get_step_data(form_key))
             if not form_obj.is_valid():
@@ -210,13 +222,13 @@ class FormWizard(object):
         """
         return self.get_form_step_data(request, storage, form)
 
-    def render_revalidation_failure(self, request, storage, failed_step, form, **kwargs):
+    def render_revalidation_failure(self, request, storage, step, form, **kwargs):
         """
         Gets called when a form doesn't validate before rendering the done
         view. By default, it resets the current step to the first failing
         form and renders the form.
         """
-        storage.set_current_step(failed_step)
+        storage.set_current_step(step)
         return self.render(request, storage, form, **kwargs)
 
     def get_form_step_data(self, request, storage, form):
@@ -233,7 +245,7 @@ class FormWizard(object):
         and contain a list of the formset' cleaned_data dictionaries.
         """
         cleaned_dict = {}
-        for form_key in self.form_list.keys():
+        for form_key in self.get_form_list(request, storage).keys():
             form_obj = self.get_form(request, storage, step=form_key,
                 data=storage.get_step_data(form_key))
             if form_obj.is_valid():
@@ -270,13 +282,13 @@ class FormWizard(object):
         """
         Returns the name of the first step.
         """
-        return self.form_list.keys()[0]
+        return self.get_form_list(request, storage).keys()[0]
 
     def get_last_step(self, request, storage):
         """
         Returns the name of the last step.
         """
-        return self.form_list.keys()[-1]
+        return self.get_form_list(request, storage).keys()[-1]
 
     def get_next_step(self, request, storage, step=None):
         """
@@ -284,11 +296,13 @@ class FormWizard(object):
         available, None will be returned. If the `step` argument is None, the
         current step will be determined automatically.
         """
+        form_list = self.get_form_list(request, storage)
+
         if step is None:
             step = self.determine_step(request, storage)
-        key = self.form_list.keyOrder.index(step) + 1
-        if len(self.form_list.keyOrder) > key:
-            return self.form_list.keyOrder[key]
+        key = form_list.keyOrder.index(step) + 1
+        if len(form_list.keyOrder) > key:
+            return form_list.keyOrder[key]
         else:
             return None
 
@@ -298,13 +312,15 @@ class FormWizard(object):
         steps available, None will be returned. If the `step` argument is None, the
         current step will be determined automatically.
         """
+        form_list = self.get_form_list(request, storage)
+
         if step is None:
             step = self.determine_step(request, storage)
-        key = self.form_list.keyOrder.index(step) - 1
+        key = form_list.keyOrder.index(step) - 1
         if key < 0:
             return None
         else:
-            return self.form_list.keyOrder[key]
+            return form_list.keyOrder[key]
 
     def get_step_index(self, request, storage, step=None):
         """
@@ -313,14 +329,13 @@ class FormWizard(object):
         """
         if step is None:
             step = self.determine_step(request, storage)
-        return self.form_list.keyOrder.index(step)
+        return self.get_form_list(request, storage).keyOrder.index(step)
 
-    @property
-    def num_steps(self):
+    def get_num_steps(self, request, storage):
         """
         Returns the total number of steps/forms in this the wizard.
         """
-        return len(self.form_list)
+        return len(self.get_form_list(request, storage))
 
     def get_wizard_name(self):
         """
@@ -354,7 +369,7 @@ class FormWizard(object):
         Updates the currently stored extra context data. Already stored extra
         context will be kept!
         """
-        context = self.get_extra_context(request, storage)
+        context = self.get_extra_context(request,storage)
         context.update(new_context)
         return storage.set_extra_context_data(context)
 
@@ -392,7 +407,7 @@ class FormWizard(object):
             'form_next_step': self.get_next_step(request, storage),
             'form_step0': int(self.get_step_index(request, storage)),
             'form_step1': int(self.get_step_index(request, storage)) + 1,
-            'form_step_count': self.num_steps,
+            'form_step_count': self.get_num_steps(request, storage),
             'form': form,
         }, context_instance=RequestContext(request))
 
