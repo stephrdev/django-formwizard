@@ -37,7 +37,7 @@ class NamedUrlSessionFormWizard(SessionFormWizard):
                         data=storage.get_step_data(
                             self.get_last_step(request, storage))), **kwargs)
             if step_url <> self.determine_step(request, storage):
-                if self.form_list.has_key(step_url):
+                if self.get_form_list(request, storage).has_key(step_url):
                     storage.set_current_step(step_url)
                     return self.render(request, storage,
                         self.get_form(request, storage,
@@ -55,7 +55,7 @@ class NamedUrlSessionFormWizard(SessionFormWizard):
 
     def process_post_request(self, request, storage, *args, **kwargs):
         if request.POST.has_key('form_prev_step') and \
-            self.form_list.has_key(request.POST['form_prev_step']):
+            self.get_form_list(request, storage).has_key(request.POST['form_prev_step']):
             storage.set_current_step(request.POST['form_prev_step'])
             return HttpResponseRedirect(reverse(self.url_name, kwargs={
                 'step': storage.get_current_step()

@@ -73,6 +73,21 @@ class FormTests(TestCase):
         response, storage = testform2(request, testmode=True)
         self.assertEquals(testform2.determine_step(request, storage), 'step2')
 
+    def test_form_condition(self):
+        request = get_request()
+
+        testform = TestWizard('formwizard.storage.session.SessionStorage',
+            [('start', Step1), ('step2', Step2), ('step3', Step3)],
+            condition_list={'step2': True})
+        response, storage = testform(request, testmode=True)
+        self.assertEquals(testform.get_next_step(request, storage), 'step2')
+
+        testform = TestWizard('formwizard.storage.session.SessionStorage',
+            [('start', Step1), ('step2', Step2), ('step3', Step3)],
+            condition_list={'step2': False})
+        response, storage = testform(request, testmode=True)
+        self.assertEquals(testform.get_next_step(request, storage), 'step3')
+
     def test_add_extra_context(self):
         request = get_request()
 
