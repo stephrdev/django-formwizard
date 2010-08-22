@@ -22,6 +22,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'formwizard',
     'testapp',
+    'testapp2',
 )
 
 #TEST_RUNNER = 'django-test-coverage.runner.run_tests'
