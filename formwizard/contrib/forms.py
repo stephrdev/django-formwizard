@@ -35,13 +35,17 @@ class NamedUrlSessionFormWizard(SessionFormWizard):
                     self.get_form(request, storage,
                         step=self.get_last_step(request, storage),
                         data=storage.get_step_data(
+                            self.get_last_step(request, storage))
+                        files=storage.get_step_files(
                             self.get_last_step(request, storage))), **kwargs)
             if step_url <> self.determine_step(request, storage):
                 if self.get_form_list(request, storage).has_key(step_url):
                     storage.set_current_step(step_url)
                     return self.render(request, storage,
                         self.get_form(request, storage,
-                            data=storage.get_current_step_data()), **kwargs)
+                            data=storage.get_current_step_data(),
+                            files=storage.get_current_step_files(),
+                            ), **kwargs)
                 else:
                     storage.set_current_step(
                         self.get_first_step(request, storage))
