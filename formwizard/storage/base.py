@@ -18,6 +18,12 @@ class BaseStorage(object):
     def set_step_data(self, step, cleaned_data):
         raise NotImplementedError()
 
+    def get_step_files(self, step):
+        raise NotImplementedError()
+
+    def set_step_files(self, step, files):
+        raise NotImplementedError()
+
     def get_extra_context_data(self):
         raise NotImplementedError()
 
