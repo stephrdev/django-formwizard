@@ -1,3 +1,6 @@
+class NoFileStorageException(Exception):
+    pass
+
 class BaseStorage(object):
     def __init__(self, prefix, *args, **kwargs):
         self.prefix = 'formwizard_%s' % prefix

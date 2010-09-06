@@ -2,6 +2,8 @@ from django.utils.datastructures import SortedDict
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from formwizard.storage import get_storage
+from formwizard.storage.base import NoFileStorageException
+
 from django import forms
 import copy
 
@@ -11,7 +13,8 @@ class FormWizard(object):
     an instance.
     """
 
-    def __init__(self, storage, form_list, initial_list={}, instance_list={}, condition_list={}):
+    def __init__(self, storage, form_list, initial_list={}, instance_list={},
+        condition_list={}):
         """
         Creates a form wizard instance. `storage` is the storage backend, the
         place where step data and current state of the form gets saved.
@@ -37,6 +40,12 @@ class FormWizard(object):
                 self.form_list[unicode(form[0])] = form[1]
             else:
                 self.form_list[unicode(i)] = form
+
+        for form in self.form_list.values():
+            if [True for f in form.base_fields.values()
+                if issubclass(f.__class__, forms.FileField)] and \
+                not hasattr(self, 'file_storage'):
+                raise NoFileStorageException
 
         self.initial_list = initial_list
         self.instance_list = instance_list
@@ -67,7 +76,7 @@ class FormWizard(object):
         """
 
         storage = get_storage(self.storage_name,
-            self.get_wizard_name(), request)
+            self.get_wizard_name(), request, getattr(self, 'file_storage', None))
         response = self.process_request(request, storage, *args, **kwargs)
         storage.update_response(response)
 
