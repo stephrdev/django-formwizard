@@ -178,7 +178,9 @@ class FormWizard(object):
                 return self.render_revalidation_failure(request, storage,
                     form_key, form_obj, **kwargs)
             final_form_list.append(form_obj)
-        return self.done(request, storage, final_form_list, **kwargs)
+        done_response = self.done(request, storage, final_form_list, **kwargs)
+        self.reset_wizard(request, storage)
+        return done_response
 
     def get_form_prefix(self, request, storage, step=None, form=None):
         """
