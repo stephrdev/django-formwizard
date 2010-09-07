@@ -5,6 +5,7 @@ from formwizard.storage import get_storage
 from formwizard.storage.base import NoFileStorageException
 
 from django import forms
+from django.forms import formsets
 import copy
 
 class FormWizard(object):
@@ -42,6 +43,8 @@ class FormWizard(object):
                 self.form_list[unicode(i)] = form
 
         for form in self.form_list.values():
+            if issubclass(form, formsets.BaseFormSet):
+                form = form.form
             if [True for f in form.base_fields.values()
                 if issubclass(f.__class__, forms.FileField)] and \
                 not hasattr(self, 'file_storage'):
