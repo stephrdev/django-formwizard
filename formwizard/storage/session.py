@@ -9,13 +9,12 @@ class SessionStorage(BaseStorage):
     step_files_session_key = 'step_files'
     extra_context_session_key = 'extra_context'
     
-    def __init__(self, prefix, request, file_storage, *args, **kwargs):
-        self.prefix = 'formwizard_%s' % prefix
+    def __init__(self, prefix, request, file_storage=None, *args, **kwargs):
+        super(SessionStorage, self).__init__(prefix)
         self.request = request
         self.file_storage = file_storage
         if not self.request.session.has_key(self.prefix):
             self.init_storage()
-        super(BaseStorage, self).__init__(*args, **kwargs)
 
     def init_storage(self):
         self.request.session[self.prefix] = {
