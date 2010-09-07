@@ -35,7 +35,7 @@ class NamedUrlSessionFormWizard(SessionFormWizard):
                     self.get_form(request, storage,
                         step=self.get_last_step(request, storage),
                         data=storage.get_step_data(
-                            self.get_last_step(request, storage))
+                            self.get_last_step(request, storage)),
                         files=storage.get_step_files(
                             self.get_last_step(request, storage))), **kwargs)
             if step_url <> self.determine_step(request, storage):
