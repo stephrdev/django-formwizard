@@ -27,3 +27,9 @@ class ContactWizard(FormWizard):
 
         c['this_will_fail'] = self.get_cleaned_data_for_step(request, storage, 'this_will_fail')
         return HttpResponse(Template('').render(c))
+
+    def get_template_context(self, request, storage, form):
+        context = super(ContactWizard, self).get_template_context(request, storage, form)
+        if storage.get_current_step() == 'form2':
+            context.update({'another_var': True})
+        return context

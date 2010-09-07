@@ -75,6 +75,19 @@ class WizardTests(object):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['form_step'], 'form1')
 
+    def test_template_context(self):
+        response = self.client.get(self.wizard_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form_step'], 'form1')
+        self.assertEqual(response.context.get('another_var', None), None)
+
+        response = self.client.post(self.wizard_url, self.wizard_step_data[0])
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form_step'], 'form2')
+        self.assertEqual(response.context.get('another_var', None), True)
+
     def test_form_finish(self):
         response = self.client.get(self.wizard_url)
 

@@ -392,6 +392,30 @@ class FormWizard(object):
         """
         return 'formwizard/wizard.html'
 
+    def get_template_context(self, request, storage, form):
+        """
+        Returns the template context for a step. You can overwrite this method
+        to add more data for all or some steps.
+        Example:
+        def get_template_context(self, request, storage):
+            context = super(MyWizard, self).get_template_context(request, storage)
+            if storage.get_current_step() == 'my_step_name':
+                context.update({'another_var': True})
+            return context
+        """
+        return {
+            'extra_context': self.get_extra_context(request, storage),
+            'form_step': self.determine_step(request, storage),
+            'form_first_step': self.get_first_step(request, storage),
+            'form_last_step': self.get_last_step(request, storage),
+            'form_prev_step': self.get_prev_step(request, storage),
+            'form_next_step': self.get_next_step(request, storage),
+            'form_step0': int(self.get_step_index(request, storage)),
+            'form_step1': int(self.get_step_index(request, storage)) + 1,
+            'form_step_count': self.get_num_steps(request, storage),
+            'form': form,
+        }
+
     def get_extra_context(self, request, storage):
         """
         Returns the extra data currently stored in the storage backend.
@@ -430,20 +454,11 @@ class FormWizard(object):
          * `form_step_count` - total number of steps
          * `form` - form instance of the current step
         """
-         
+
         form = form or self.get_form(request, storage)
-        return render_to_response(self.get_template(request, storage), {
-            'extra_context': self.get_extra_context(request, storage),
-            'form_step': self.determine_step(request, storage),
-            'form_first_step': self.get_first_step(request, storage),
-            'form_last_step': self.get_last_step(request, storage),
-            'form_prev_step': self.get_prev_step(request, storage),
-            'form_next_step': self.get_next_step(request, storage),
-            'form_step0': int(self.get_step_index(request, storage)),
-            'form_step1': int(self.get_step_index(request, storage)) + 1,
-            'form_step_count': self.get_num_steps(request, storage),
-            'form': form,
-        }, context_instance=RequestContext(request))
+        return render_to_response(self.get_template(request, storage),
+            self.get_template_context(request, storage, form),
+            context_instance=RequestContext(request))
 
     def done(self, request, storage, form_list, **kwargs):
         """
