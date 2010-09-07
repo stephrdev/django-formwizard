@@ -55,7 +55,9 @@ class NamedUrlSessionFormWizard(SessionFormWizard):
             else:
                 return self.render(request, storage,
                     self.get_form(request, storage,
-                        data=storage.get_current_step_data()), **kwargs)
+                        data=storage.get_current_step_data(),
+                        files=storage.get_current_step_files()),
+                        **kwargs)
 
     def process_post_request(self, request, storage, *args, **kwargs):
         if request.POST.has_key('form_prev_step') and \
