@@ -4,7 +4,9 @@ from django.conf import settings
 from django.core.exceptions import SuspiciousOperation
 from django.utils.hashcompat import sha_constructor
 from django.utils import simplejson as json
-from formwizard.storage.base import BaseStorage
+from formwizard.storage.base import BaseStorage, NoFileStorageException
+from django.core.files.uploadedfile import UploadedFile
+from django.core.files import File
 
 sha_hmac = sha_constructor
 
@@ -14,8 +16,9 @@ class CookieStorage(BaseStorage):
     step_files_cookie_key = 'step_files'
     extra_context_cookie_key = 'extra_context'
 
-    def __init__(self, prefix, request, *args, **kwargs):
+    def __init__(self, prefix, request, file_storage, *args, **kwargs):
         super(CookieStorage, self).__init__(prefix)
+        self.file_storage = file_storage
         self.request = request
         self.cookie_data = self.load_cookie_data()
         if self.cookie_data is None:
