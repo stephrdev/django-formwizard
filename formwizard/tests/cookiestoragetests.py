@@ -10,7 +10,7 @@ class TestCookieStorage(TestStorage, TestCase):
 
     def test_manipulated_cookie(self):
         request = get_request()
-        storage = self.get_storage()('wizard1', request)
+        storage = self.get_storage()('wizard1', request, None)
 
         storage.request.COOKIES[storage.prefix] = storage.create_cookie_data({'key1': 'value1'})
         self.assertEqual(storage.load_cookie_data(), {'key1': 'value1'})
@@ -23,7 +23,7 @@ class TestCookieStorage(TestStorage, TestCase):
 
     def test_delete_cookie(self):
         request = get_request()
-        storage = self.get_storage()('wizard1', request)
+        storage = self.get_storage()('wizard1', request, None)
 
         storage.cookie_data = {'key1': 'value1'}
 
