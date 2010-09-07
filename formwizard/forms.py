@@ -2,6 +2,8 @@ from django.utils.datastructures import SortedDict
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from formwizard.storage import get_storage
+from formwizard.storage.base import NoFileStorageException
+
 from django import forms
 import copy
 
@@ -11,7 +13,8 @@ class FormWizard(object):
     an instance.
     """
 
-    def __init__(self, storage, form_list, initial_list={}, instance_list={}, condition_list={}):
+    def __init__(self, storage, form_list, initial_list={}, instance_list={},
+        condition_list={}):
         """
         Creates a form wizard instance. `storage` is the storage backend, the
         place where step data and current state of the form gets saved.
@@ -37,6 +40,12 @@ class FormWizard(object):
                 self.form_list[unicode(form[0])] = form[1]
             else:
                 self.form_list[unicode(i)] = form
+
+        for form in self.form_list.values():
+            if [True for f in form.base_fields.values()
+                if issubclass(f.__class__, forms.FileField)] and \
+                not hasattr(self, 'file_storage'):
+                raise NoFileStorageException
 
         self.initial_list = initial_list
         self.instance_list = instance_list
@@ -67,7 +76,7 @@ class FormWizard(object):
         """
 
         storage = get_storage(self.storage_name,
-            self.get_wizard_name(), request)
+            self.get_wizard_name(), request, getattr(self, 'file_storage', None))
         response = self.process_request(request, storage, *args, **kwargs)
         storage.update_response(response)
 
@@ -118,13 +127,18 @@ class FormWizard(object):
             storage.set_current_step(request.POST['form_prev_step'])
             form = self.get_form(request, storage, 
                 data=storage.get_step_data(
-                    self.determine_step(request, storage)))
+                    self.determine_step(request, storage)),
+                files=storage.get_step_files(
+                    self.determine_step(request, storage)),
+            )
         else:
-            form = self.get_form(request, storage, data=request.POST)
-
+            form = self.get_form(request, storage, data=request.POST,
+                files=request.FILES)
             if form.is_valid():
                 storage.set_step_data(self.determine_step(request, storage),
                     self.process_step(request, storage, form))
+                storage.set_step_files(self.determine_step(request, storage),
+                    self.process_step_files(request, storage, form))
 
                 current_step = self.determine_step(request, storage)
                 last_step = self.get_last_step(request, storage)
@@ -143,7 +157,8 @@ class FormWizard(object):
         """
         next_step = self.get_next_step(request, storage)
         new_form = self.get_form(request, storage, next_step,
-            data=storage.get_step_data(next_step))
+            data=storage.get_step_data(next_step),
+            files=storage.get_step_files(next_step))
         storage.set_current_step(next_step)
         return self.render(request, storage, new_form, **kwargs)
 
@@ -157,12 +172,15 @@ class FormWizard(object):
         final_form_list = []
         for form_key in self.get_form_list(request, storage).keys():
             form_obj = self.get_form(request, storage, step=form_key,
-                data=storage.get_step_data(form_key))
+                data=storage.get_step_data(form_key),
+                files=storage.get_step_files(form_key))
             if not form_obj.is_valid():
                 return self.render_revalidation_failure(request, storage,
                     form_key, form_obj, **kwargs)
             final_form_list.append(form_obj)
-        return self.done(request, storage, final_form_list, **kwargs)
+        done_response = self.done(request, storage, final_form_list, **kwargs)
+        self.reset_wizard(request, storage)
+        return done_response
 
     def get_form_prefix(self, request, storage, step=None, form=None):
         """
@@ -193,7 +211,7 @@ class FormWizard(object):
         """
         return self.instance_list.get(step, None)
 
-    def get_form(self, request, storage, step=None, data=None):
+    def get_form(self, request, storage, step=None, data=None, files=None):
         """
         Constructs the form for a given `step`. If no `step` is defined, the
         current step will be determined automatically.
@@ -205,6 +223,7 @@ class FormWizard(object):
             step = self.determine_step(request, storage)
         kwargs = {
             'data': data,
+            'files': files,
             'prefix': self.get_form_prefix(request, storage, step,
                 self.form_list[step]),
             'initial': self.get_form_initial(request, storage, step),
@@ -222,6 +241,9 @@ class FormWizard(object):
         """
         return self.get_form_step_data(request, storage, form)
 
+    def process_step_files(self, request, storage, form):
+        return self.get_form_step_files(request, storage, form)
+
     def render_revalidation_failure(self, request, storage, step, form, **kwargs):
         """
         Gets called when a form doesn't validate before rendering the done
@@ -238,6 +260,13 @@ class FormWizard(object):
         """
         return form.data
 
+    def get_form_step_files(self, request, storage, form):
+        """
+        Is used to return the raw form files. You may use this method to
+        manipulate the data.
+        """
+        return form.files
+
     def get_all_cleaned_data(self, request, storage):
         """
         Returns a merged dictionary of all step' cleaned_data dictionaries.
@@ -247,7 +276,8 @@ class FormWizard(object):
         cleaned_dict = {}
         for form_key in self.get_form_list(request, storage).keys():
             form_obj = self.get_form(request, storage, step=form_key,
-                data=storage.get_step_data(form_key))
+                data=storage.get_step_data(form_key),
+                files=storage.get_step_files(form_key))
             if form_obj.is_valid():
                 if isinstance(form_obj.cleaned_data, list):
                     cleaned_dict.update({
@@ -265,7 +295,8 @@ class FormWizard(object):
         """
         if self.form_list.has_key(step):
             form_obj = self.get_form(request, storage, step=step,
-                data=storage.get_step_data(step))
+                data=storage.get_step_data(step),
+                files=storage.get_step_files(step))
             if form_obj.is_valid():
                 return form_obj.cleaned_data
         return None

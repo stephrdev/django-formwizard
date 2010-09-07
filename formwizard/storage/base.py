@@ -1,3 +1,6 @@
+class NoFileStorageException(Exception):
+    pass
+
 class BaseStorage(object):
     def __init__(self, prefix, *args, **kwargs):
         self.prefix = 'formwizard_%s' % prefix
@@ -16,6 +19,12 @@ class BaseStorage(object):
         raise NotImplementedError()
 
     def set_step_data(self, step, cleaned_data):
+        raise NotImplementedError()
+
+    def get_step_files(self, step):
+        raise NotImplementedError()
+
+    def set_step_files(self, step, files):
         raise NotImplementedError()
 
     def get_extra_context_data(self):
