@@ -43,7 +43,7 @@ Creating our formwizard class
 
 To use the formwizard, you have to subclass `formwizard.forms.FormWizard` and add at least a `done` method. There are much more methods you could override. But now, there is no need for it.
 
-If you use `formwizard.forms.FormWizard`, you have to define a storage backend manually. To get rid of this, django-formwizard provides to predefined storage backend formwizards. SessionFormWizard and CookieFormWizard. The SessionFormWizard will store the step-formdata in a session and the CookieFormWizard will save the formdata in a cookie (which is protected against manipulation).
+If you use `formwizard.forms.FormWizard`, you have to define a storage backend manually. To get rid of this, django-formwizard provides two predefined storage backend formwizards. SessionFormWizard and CookieFormWizard. The SessionFormWizard will store the step-formdata in a session and the CookieFormWizard will save the formdata in a cookie (which is protected against manipulation).
 
 For example, the formwizard will look for a template in the template directory using the following filename: `formwizard/wizard.html`. But this file is no complete html page. It has not <form> tags or <body>/<html> stuff. To change this behaviour, you can override the `get_template` method and return a list of templates to use.
 
@@ -67,7 +67,7 @@ The `done` method in this example will render the template `support/done.html` a
 Create the formwizard instance
 ==============================
 
-To actually use the form wizard, we have to create a can be done once (if you don't need need to add initial data/instance data) or within a view.
+To actually use the form wizard, we have to create a instance of the class. This can be done once (if you don't need need to add initial data/instance data) or within a view.
 
 .. code-block:: python
 
