@@ -616,7 +616,7 @@ class NamedUrlFormWizard(FormWizard):
                 'step': self.done_step_name
             }))
 
-        return super(NamedUrlSessionFormWizard, self).render_done(
+        return super(NamedUrlFormWizard, self).render_done(
             request, storage, form, **kwargs)
 
 
