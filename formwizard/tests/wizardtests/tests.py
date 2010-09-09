@@ -75,6 +75,19 @@ class WizardTests(object):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['form_step'], 'form1')
 
+    def test_template_context(self):
+        response = self.client.get(self.wizard_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form_step'], 'form1')
+        self.assertEqual(response.context.get('another_var', None), None)
+
+        response = self.client.post(self.wizard_url, self.wizard_step_data[0])
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form_step'], 'form2')
+        self.assertEqual(response.context.get('another_var', None), True)
+
     def test_form_finish(self):
         response = self.client.get(self.wizard_url)
 
@@ -86,7 +99,9 @@ class WizardTests(object):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['form_step'], 'form2')
 
-        response = self.client.post(self.wizard_url, self.wizard_step_data[1])
+        post_data = self.wizard_step_data[1]
+        post_data['form2-file1'] = open(__file__)
+        response = self.client.post(self.wizard_url, post_data)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['form_step'], 'form3')
@@ -99,28 +114,38 @@ class WizardTests(object):
         response = self.client.post(self.wizard_url, self.wizard_step_data[3])
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.context['form_list'], [{'name': u'Pony', 'thirsty': True, 'user': self.testuser}, {'address1': u'123 Main St', 'address2': u'Djangoland'}, {'random_crap': u'blah blah'}, [{'random_crap': u'blah blah'}, {'random_crap': u'blah blah'}]])
+        all_data = response.context['form_list']
+        self.assertEqual(all_data[1]['file1'].read(), open(__file__).read())
+        del all_data[1]['file1']
+        self.assertEqual(all_data, [{'name': u'Pony', 'thirsty': True, 'user': self.testuser}, {'address1': u'123 Main St', 'address2': u'Djangoland'}, {'random_crap': u'blah blah'}, [{'random_crap': u'blah blah'}, {'random_crap': u'blah blah'}]])
 
     def test_cleaned_data(self):
         response = self.client.get(self.wizard_url)
         self.assertEqual(response.status_code, 200)
         response = self.client.post(self.wizard_url, self.wizard_step_data[0])
         self.assertEqual(response.status_code, 200)
-        response = self.client.post(self.wizard_url, self.wizard_step_data[1])
+        post_data = self.wizard_step_data[1]
+        post_data['form2-file1'] = open(__file__)
+        response = self.client.post(self.wizard_url, post_data)
         self.assertEqual(response.status_code, 200)
         response = self.client.post(self.wizard_url, self.wizard_step_data[2])
         self.assertEqual(response.status_code, 200)
         response = self.client.post(self.wizard_url, self.wizard_step_data[3])
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.context['all_cleaned_data'], {'name': u'Pony', 'thirsty': True, 'user': self.testuser, 'address1': u'123 Main St', 'address2': u'Djangoland', 'random_crap': u'blah blah', 'formset-form4': [{'random_crap': u'blah blah'}, {'random_crap': u'blah blah'}]})
+        all_data = response.context['all_cleaned_data']
+        self.assertEqual(all_data['file1'].read(), open(__file__).read())
+        del all_data['file1']
+        self.assertEqual(all_data, {'name': u'Pony', 'thirsty': True, 'user': self.testuser, 'address1': u'123 Main St', 'address2': u'Djangoland', 'random_crap': u'blah blah', 'formset-form4': [{'random_crap': u'blah blah'}, {'random_crap': u'blah blah'}]})
 
     def test_manipulated_data(self):
         response = self.client.get(self.wizard_url)
         self.assertEqual(response.status_code, 200)
         response = self.client.post(self.wizard_url, self.wizard_step_data[0])
         self.assertEqual(response.status_code, 200)
-        response = self.client.post(self.wizard_url, self.wizard_step_data[1])
+        post_data = self.wizard_step_data[1]
+        post_data['form2-file1'] = open(__file__)
+        response = self.client.post(self.wizard_url, post_data)
         self.assertEqual(response.status_code, 200)
         response = self.client.post(self.wizard_url, self.wizard_step_data[2])
         self.assertEqual(response.status_code, 200)

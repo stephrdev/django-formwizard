@@ -3,7 +3,7 @@ from django.test import TestCase, Client
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 
-from formwizard.contrib.forms import NamedUrlSessionFormWizard
+from formwizard.forms import NamedUrlSessionFormWizard, NamedUrlCookieFormWizard
 from formwizard.tests.formtests import get_request, Step1, Step2
 
 
@@ -154,6 +154,7 @@ class NamedWizardTests(object):
         response = self.client.get(response['Location'])
         self.assertEqual(response.status_code, 200)
         self.client.cookies.pop('sessionid', None)
+        self.client.cookies.pop('formwizard_ContactWizard', None)
         response = self.client.post(reverse(self.wizard_urlname, kwargs={'step': response.context['form_step']}), self.wizard_step_data[3])
 
         self.assertEqual(response.status_code, 200)
@@ -174,26 +175,37 @@ class NamedWizardTests(object):
 class NamedSessionWizardTests(NamedWizardTests, TestCase):
     wizard_urlname = 'nwiz_session'
 
-class NamedFormTests(TestCase):
+class NamedCookieWizardTests(NamedWizardTests, TestCase):
+    wizard_urlname = 'nwiz_cookie'
+
+class NamedFormTests(object):
     urls = 'formwizard.tests.namedwizardtests.urls'
 
     def test_add_extra_context(self):
         request = get_request()
 
-        testform = NamedUrlSessionFormWizard([('start', Step1), ('step2', Step2)], url_name='nwiz_session')
+        testform = self.formwizard_class([('start', Step1), ('step2', Step2)], url_name=self.wizard_urlname)
 
-        testform, response = testform.real_call(request, step='form1', extra_context={'key1': 'value1'})
-        self.assertEqual(testform.get_extra_context(), {'key1': 'value1'})
+        response, storage = testform(request, step='form1', extra_context={'key1': 'value1'}, testmode=True)
+        self.assertEqual(testform.get_extra_context(request, storage), {'key1': 'value1'})
 
-        testform.reset_wizard()
+        testform.reset_wizard(request, storage)
 
-        testform, response = testform.real_call(request, extra_context={'key2': 'value2'})
-        self.assertEqual(testform.get_extra_context(), {'key2': 'value2'})
+        response, storage = testform(request, extra_context={'key2': 'value2'}, testmode=True)
+        self.assertEqual(testform.get_extra_context(request, storage), {'key2': 'value2'})
 
     def test_revalidation(self):
         request = get_request()
 
-        testform = NamedUrlSessionFormWizard([('start', Step1), ('step2', Step2)], url_name='nwiz_session')
-        testform, response = testform.real_call(request, step='done')
-        testform.render_done(None)
-        self.assertEqual(testform.storage.get_current_step(), 'start')
+        testform = self.formwizard_class([('start', Step1), ('step2', Step2)], url_name=self.wizard_urlname)
+        response, storage = testform(request, step='done', testmode=True)
+        testform.render_done(request, storage, None)
+        self.assertEqual(storage.get_current_step(), 'start')
+
+class NamedSessionFormTests(NamedFormTests, TestCase):
+    formwizard_class = NamedUrlSessionFormWizard
+    wizard_urlname = 'nwiz_session'
+
+class NamedCookieFormTests(NamedFormTests, TestCase):
+    formwizard_class = NamedUrlCookieFormWizard
+    wizard_urlname = 'nwiz_cookie'
