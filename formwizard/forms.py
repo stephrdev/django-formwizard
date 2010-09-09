@@ -1,6 +1,8 @@
 from django.utils.datastructures import SortedDict
 from django.shortcuts import render_to_response
 from django.template import RequestContext
+from django.http import HttpResponseRedirect
+from django.core.urlresolvers import reverse
 from formwizard.storage import get_storage
 from formwizard.storage.base import NoFileStorageException
 
@@ -482,4 +484,154 @@ class CookieFormWizard(FormWizard):
     """
     def __init__(self, *args, **kwargs):
         super(CookieFormWizard, self).__init__(
+            'formwizard.storage.cookie.CookieStorage', *args, **kwargs)
+
+class NamedUrlFormWizard(FormWizard):
+    """
+    A FormWizard with url-named steps support.
+    """
+    done_step_name = 'done'
+
+    def __init__(self, *args, **kwargs):
+        """
+        We require a url_name to reverse urls later. Additionally users can
+        pass a done_step_name to change the url-name of the "done" view.
+        """
+        assert kwargs.has_key('url_name'), \
+            'url name is needed to resolve correct wizard urls'
+        self.url_name = kwargs['url_name']
+        del kwargs['url_name']
+
+        if kwargs.has_key('done_step_name'):
+            self.done_step_name = kwargs['done_step_name']
+            del kwargs['done_step_name']
+
+        super(NamedUrlFormWizard, self).__init__(*args, **kwargs)
+
+        assert not self.form_list.has_key(self.done_step_name), \
+            'step name "%s" is reserved for "done" view' % self.done_step_name
+
+    def process_get_request(self, request, storage, *args, **kwargs):
+        """
+        This renders the form or, if needed, does the http redirects.
+        """
+        if not kwargs.has_key('step'):
+            if request.GET.has_key('reset'):
+                self.reset_wizard(request, storage)
+                storage.set_current_step(self.get_first_step(request, storage))
+
+            if 'extra_context' in kwargs:
+                self.update_extra_context(request, storage,
+                    kwargs['extra_context'])
+
+            return HttpResponseRedirect(reverse(self.url_name,
+                kwargs={'step': self.determine_step(request, storage)}))
+        else:
+            if 'extra_context' in kwargs:
+                self.update_extra_context(request, storage,
+                    kwargs['extra_context'])
+
+            step_url = kwargs.get('step', None)
+
+            # is the current step the "done" name/view?
+            if step_url == self.done_step_name:
+                return self.render_done(request, storage,
+                    self.get_form(request, storage,
+                        step=self.get_last_step(request, storage),
+                        data=storage.get_step_data(
+                            self.get_last_step(request, storage)),
+                        files=storage.get_step_files(
+                            self.get_last_step(request, storage))), **kwargs)
+
+            # is the url step name not equal to the step in the storage?
+            # if yes, change the step in the storage (if name exists)
+            if step_url <> self.determine_step(request, storage):
+                if self.get_form_list(request, storage).has_key(step_url):
+                    storage.set_current_step(step_url)
+
+                    return self.render(request, storage,
+                        self.get_form(request, storage,
+                            data=storage.get_current_step_data(),
+                            files=storage.get_current_step_files()
+                        ), **kwargs)
+                else:
+                    # invalid step name, reset to first and redirect.
+                    storage.set_current_step(
+                        self.get_first_step(request, storage))
+
+                    return HttpResponseRedirect(reverse(self.url_name,
+                        kwargs={'step': storage.get_current_step()}))
+            else:
+                # url step name and storage step name are equal, render!
+                return self.render(request, storage,
+                    self.get_form(request, storage,
+                        data=storage.get_current_step_data(),
+                        files=storage.get_current_step_files()
+                    ), **kwargs)
+
+    def process_post_request(self, request, storage, *args, **kwargs):
+        """
+        Do a redirect if user presses the prev. step button. The rest of this
+        is super'd from FormWizard.
+        """
+        if request.POST.has_key('form_prev_step') and \
+            self.get_form_list(request, storage).has_key(request.POST['form_prev_step']):
+
+            storage.set_current_step(request.POST['form_prev_step'])
+            return HttpResponseRedirect(reverse(self.url_name, kwargs={
+                'step': storage.get_current_step()
+            }))
+        else:
+            return super(NamedUrlFormWizard, self).process_post_request(
+                request, storage, *args, **kwargs)
+
+    def render_next_step(self, request, storage, form, **kwargs):
+        """
+        When using the NamedUrlFormWizard, we have to redirect to update the
+        browser's url to match the shown step.
+        """
+        next_step = self.get_next_step(request, storage)
+        storage.set_current_step(next_step)
+        return HttpResponseRedirect(
+            reverse(self.url_name, kwargs={'step': next_step}))
+
+    def render_revalidation_failure(self, request, storage, failed_step, form, **kwargs):
+        """
+        When a step fails, we have to redirect the user to the first failing
+        step.
+        """
+        storage.set_current_step(failed_step)
+        return HttpResponseRedirect(reverse(self.url_name, kwargs={
+            'step': storage.get_current_step()
+        }))
+
+    def render_done(self, request, storage, form, **kwargs):
+        """
+        When rendering the done view, we have to redirect first (if the url
+        name doesn't fit).
+        """
+        step_url = kwargs.get('step', None)
+        if step_url <> self.done_step_name:
+            return HttpResponseRedirect(reverse(self.url_name, kwargs={
+                'step': self.done_step_name
+            }))
+
+        return super(NamedUrlSessionFormWizard, self).render_done(
+            request, storage, form, **kwargs)
+
+
+class NamedUrlSessionFormWizard(NamedUrlFormWizard):
+    """
+    A NamedUrlFormWizard with pre-configured SessionStorageBackend.
+    """
+    def __init__(self, *args, **kwargs):
+        super(NamedUrlSessionFormWizard, self).__init__(
+            'formwizard.storage.session.SessionStorage', *args, **kwargs)
+
+class NamedUrlCookieFormWizard(NamedUrlFormWizard):
+    """
+    A NamedUrlFormWizard with pre-configured CookieStorageBackend.
+    """
+    def __init__(self, *args, **kwargs):
+        super(NamedUrlCookieFormWizard, self).__init__(
             'formwizard.storage.cookie.CookieStorage', *args, **kwargs)
