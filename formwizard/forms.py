@@ -400,7 +400,7 @@ class FormWizard(object):
         to add more data for all or some steps.
         Example:
         def get_template_context(self, request, storage):
-            context = super(MyWizard, self).get_template_context(request, storage)
+            context = super(self.__class__, self).get_template_context(request, storage)
             if storage.get_current_step() == 'my_step_name':
                 context.update({'another_var': True})
             return context
