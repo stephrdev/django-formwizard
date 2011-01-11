@@ -399,8 +399,9 @@ class FormWizard(object):
         Returns the template context for a step. You can overwrite this method
         to add more data for all or some steps.
         Example:
-        def get_template_context(self, request, storage):
-            context = super(self.__class__, self).get_template_context(request, storage)
+        def get_template_context(self, request, storage, form):
+            context = super(self.__class__, self).get_template_context(
+                request, storage, form)
             if storage.get_current_step() == 'my_step_name':
                 context.update({'another_var': True})
             return context
