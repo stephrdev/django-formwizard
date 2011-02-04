@@ -236,6 +236,9 @@ class FormWizard(object):
         if issubclass(self.form_list[step], forms.ModelForm):
             kwargs.update({'instance':
                 self.get_form_instance(request, storage, step)})
+        elif issubclass(self.form_list[step], forms.models.BaseModelFormSet):
+            kwargs.update({'queryset':
+                self.get_form_instance(request, storage, step)})
         return self.form_list[step](**kwargs)
 
     def process_step(self, request, storage, form):
