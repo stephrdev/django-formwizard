@@ -35,6 +35,8 @@ class UserForm(forms.ModelForm):
     class Meta:
         model = User
 
+UserFormSet = forms.models.modelformset_factory(User, form=UserForm, extra=2)
+
 class TestWizard(FormWizard):
     pass
 
@@ -126,6 +128,18 @@ class FormTests(TestCase):
 
         self.assertEqual(testform.get_form_instance(request, storage, 'start'), the_instance)
         self.assertEqual(testform.get_form_instance(request, storage, 'non_exist_instance'), None)
+
+    def test_formset_instance(self):
+        request = get_request()
+        the_instance1, created = User.objects.get_or_create(username='testuser1')
+        the_instance2, created = User.objects.get_or_create(username='testuser2')
+        testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', UserFormSet), ('step2', Step2)], instance_list={'start': User.objects.filter(username='testuser1')})
+        response, storage = testform(request, testmode=True)
+
+        self.assertEqual(list(testform.get_form_instance(request, storage, 'start')), [the_instance1])
+        self.assertEqual(testform.get_form_instance(request, storage, 'non_exist_instance'), None)
+
+        self.assertEqual(testform.get_form(request, storage).initial_form_count(), 1)
 
     def test_done(self):
         request = get_request()

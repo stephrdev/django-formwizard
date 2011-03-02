@@ -236,6 +236,9 @@ class FormWizard(object):
         if issubclass(self.form_list[step], forms.ModelForm):
             kwargs.update({'instance':
                 self.get_form_instance(request, storage, step)})
+        elif issubclass(self.form_list[step], forms.models.BaseModelFormSet):
+            kwargs.update({'queryset':
+                self.get_form_instance(request, storage, step)})
         return self.form_list[step](**kwargs)
 
     def process_step(self, request, storage, form):
@@ -399,11 +402,13 @@ class FormWizard(object):
         Returns the template context for a step. You can overwrite this method
         to add more data for all or some steps.
         Example:
-        def get_template_context(self, request, storage):
-            context = super(self.__class__, self).get_template_context(request, storage)
-            if storage.get_current_step() == 'my_step_name':
-                context.update({'another_var': True})
-            return context
+        class MyWizard(FormWizard):
+            def get_template_context(self, request, storage, form):
+                context = super(MyWizard, self).get_template_context(
+                    request, storage, form)
+                if storage.get_current_step() == 'my_step_name':
+                    context.update({'another_var': True})
+                return context
         """
         return {
             'extra_context': self.get_extra_context(request, storage),
