@@ -529,8 +529,13 @@ class NamedUrlFormWizard(FormWizard):
                 self.update_extra_context(request, storage,
                     kwargs['extra_context'])
 
+            if request.GET:
+                query_string = "?%s" % request.GET.urlencode()
+            else:
+                query_string = ""
             return HttpResponseRedirect(reverse(self.url_name,
-                kwargs={'step': self.determine_step(request, storage)}))
+                kwargs={'step': self.determine_step(request, storage)}) +
+                query_string)
         else:
             if 'extra_context' in kwargs:
                 self.update_extra_context(request, storage,
