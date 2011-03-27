@@ -157,6 +157,18 @@ class FormTests(TestCase):
         testform.render_done(request, storage, None)
         self.assertEqual(storage.get_current_step(), 'start')
 
+    def test_form_refresh(self):
+        testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', Step1), ('step2', UserFormSet)])
+
+        request = get_request({'start-name': 'foo'})
+        request.method = 'POST'
+
+        response, storage = testform(request, testmode=True)
+        self.assertEqual(storage.get_current_step(), 'step2')
+        # refresh form
+        response, storage = testform(request, testmode=True)
+        self.assertEqual(storage.get_current_step(), 'step2')
+
 class SessionFormTests(TestCase):
     def test_init(self):
         request = get_request()
