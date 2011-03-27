@@ -1,6 +1,7 @@
 import re
 from django.test import TestCase, Client
 from django.core.urlresolvers import reverse
+from django.http import QueryDict
 from django.contrib.auth.models import User
 
 from formwizard.forms import NamedUrlSessionFormWizard, NamedUrlCookieFormWizard
@@ -48,6 +49,17 @@ class NamedWizardTests(object):
         self.assertEqual(response.context['form_prev_step'], None)
         self.assertEqual(response.context['form_next_step'], 'form2')
         self.assertEqual(response.context['form_step_count'], 4)
+
+    def test_initial_call_with_params(self):
+        get_params = {'getvar1': 'getval1', 'getvar2': 'getval2'}
+        response = self.client.get(reverse('%s_start' % self.wizard_urlname), get_params)
+        self.assertEqual(response.status_code, 302)
+
+        # Test for proper redirect GET parameters
+        location = response['Location']
+        self.assertNotEqual(location.find('?'), -1)
+        querydict = QueryDict(location[location.find('?') + 1:])
+        self.assertEqual(dict(querydict.items()), get_params)
 
     def test_form_post_error(self):
         response = self.client.post(reverse(self.wizard_urlname, kwargs={'step':'form1'}))

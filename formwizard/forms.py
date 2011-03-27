@@ -130,13 +130,22 @@ class FormWizard(object):
             self.get_form_list(request, storage).has_key(
             request.POST['form_prev_step']):
             storage.set_current_step(request.POST['form_prev_step'])
-            form = self.get_form(request, storage, 
+            form = self.get_form(request, storage,
                 data=storage.get_step_data(
                     self.determine_step(request, storage)),
                 files=storage.get_step_files(
                     self.determine_step(request, storage)),
             )
         else:
+            # Check if form was refreshed
+            current_step = self.determine_step(request, storage)
+            prev_step = self.get_prev_step(request, storage, step=current_step)
+            for value in request.POST:
+                if prev_step and not value.startswith(current_step) and value.startswith(prev_step):
+                    # form refreshed, change current step
+                    storage.set_current_step(prev_step)
+                    break
+
             form = self.get_form(request, storage, data=request.POST,
                 files=request.FILES)
             if form.is_valid():
@@ -210,7 +219,7 @@ class FormWizard(object):
 
     def get_form_instance(self, request, storage, step):
         """
-        Returns a object which will be passed to the form for `step` 
+        Returns a object which will be passed to the form for `step`
         as `instance`. If no instance object was provied while initializing
         the form wizard, None be returned.
         """
@@ -529,8 +538,13 @@ class NamedUrlFormWizard(FormWizard):
                 self.update_extra_context(request, storage,
                     kwargs['extra_context'])
 
+            if request.GET:
+                query_string = "?%s" % request.GET.urlencode()
+            else:
+                query_string = ""
             return HttpResponseRedirect(reverse(self.url_name,
-                kwargs={'step': self.determine_step(request, storage)}))
+                kwargs={'step': self.determine_step(request, storage)}) +
+                query_string)
         else:
             if 'extra_context' in kwargs:
                 self.update_extra_context(request, storage,
