@@ -130,7 +130,7 @@ class FormWizard(object):
             self.get_form_list(request, storage).has_key(
             request.POST['form_prev_step']):
             storage.set_current_step(request.POST['form_prev_step'])
-            form = self.get_form(request, storage, 
+            form = self.get_form(request, storage,
                 data=storage.get_step_data(
                     self.determine_step(request, storage)),
                 files=storage.get_step_files(
@@ -210,7 +210,7 @@ class FormWizard(object):
 
     def get_form_instance(self, request, storage, step):
         """
-        Returns a object which will be passed to the form for `step` 
+        Returns a object which will be passed to the form for `step`
         as `instance`. If no instance object was provied while initializing
         the form wizard, None be returned.
         """

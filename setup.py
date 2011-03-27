@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
- 
+
 setup(
     name='django-formwizard',
     version='0.5.1',
