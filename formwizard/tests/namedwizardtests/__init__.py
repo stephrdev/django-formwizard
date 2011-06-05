@@ -1,1 +1,1 @@
-from formwizard.tests.namedwizardtests.tests import *
+from formwizard.tests.namedwizardtests.tests import *
