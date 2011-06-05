@@ -1,6 +1,10 @@
 from django.core.files.uploadedfile import UploadedFile
-from django.utils.functional import lazy_property
 from django.utils.encoding import smart_str
+
+try:
+    from django.utils.functional import lazy_property
+except ImportError:
+    from formwizard.compat import lazy_property
 
 from formwizard.storage.exceptions import NoFileStorageConfigured
 

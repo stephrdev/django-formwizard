@@ -1,5 +1,4 @@
 from django.test import TestCase
-from django.core import signing
 from django.core.exceptions import SuspiciousOperation
 from django.http import HttpResponse
 
@@ -15,10 +14,15 @@ class TestCookieStorage(TestStorage, TestCase):
         request = get_request()
         storage = self.get_storage()('wizard1', request, None)
 
-        cookie_signer = signing.get_cookie_signer(storage.prefix)
+        storage.data = {'key1': 'value1'}
+        response = HttpResponse()
+        storage.update_response(response)
 
-        storage.request.COOKIES[storage.prefix] = cookie_signer.sign(
-            storage.encoder.encode({'key1': 'value1'}))
+        signed_cookie_data = storage.create_cookie_data(storage.data)
+        self.assertEqual(response.cookies[storage.prefix].value,
+            signed_cookie_data)
+
+        storage.request.COOKIES[storage.prefix] = signed_cookie_data
 
         self.assertEqual(storage.load_data(), {'key1': 'value1'})
 
@@ -34,11 +38,13 @@ class TestCookieStorage(TestStorage, TestCase):
         response = HttpResponse()
         storage.update_response(response)
 
-        cookie_signer = signing.get_cookie_signer(storage.prefix)
-        signed_cookie_data = cookie_signer.sign(storage.encoder.encode(storage.data))
-        self.assertEqual(response.cookies[storage.prefix].value, signed_cookie_data)
+        signed_cookie_data = storage.create_cookie_data(storage.data)
+        self.assertEqual(response.cookies[storage.prefix].value,
+            signed_cookie_data)
 
         storage.init_data()
         storage.update_response(response)
-        unsigned_cookie_data = cookie_signer.unsign(response.cookies[storage.prefix].value)
-        self.assertEqual(unsigned_cookie_data, '{"step_files":{},"step":null,"extra_data":{},"step_data":{}}')
+
+        self.assertEqual(
+            storage.unsign_cookie_data(response.cookies[storage.prefix].value),
+            '{"step_files":{},"step":null,"extra_data":{},"step_data":{}}')
