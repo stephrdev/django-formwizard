@@ -1,6 +1,8 @@
 from django.conf.urls.defaults import *
-from test_project.testapp.forms import feedback_form_instance
+
+from testapp.views import feedback_wizard
+
 
 urlpatterns = patterns('',
-    url(r'^$', feedback_form_instance, name='feedback_wizard'),
+    url(r'^$', feedback_wizard, name='feedback_wizard'),
 )
