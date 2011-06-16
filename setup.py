@@ -1,9 +1,14 @@
+import os
 from setuptools import setup, find_packages
+
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
     name='django-formwizard',
     version='1.0',
     description='A FormWizard for Django with multiple storage backends',
+    long_description=read("README.rst"),
     author='Stephan Jaekel',
     author_email='steph@rdev.info',
     url='http://github.com/stephrdev/django-formwizard/',

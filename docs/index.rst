@@ -2,6 +2,15 @@
 django-formwizard Documentation
 ===============================
 
+.. warning::
+
+    The 1.0+ releases are incompatible with all previous releases (<=0.6) of
+    django-formwizard!
+
+    If you want to use the old version, please install django-formwizard==0.6
+    (version 0.6 is the last version with the old api)
+
+
 django-formwizard is a reusable app to work with multi-page forms. Besides
 normal `Forms`, it  supports `FormSets`, `ModelForms` and `ModelFormSets`.
 
