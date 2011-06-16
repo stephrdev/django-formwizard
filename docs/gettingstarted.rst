@@ -282,6 +282,16 @@ Advanced ``WizardView`` methods
         def get_form_instance(self, step):
             return self.instance_dict.get(step, None)
 
+.. method:: WizardView.get_form_kwargs(step)
+
+    Returns a dictionary which will be used as the keyword arguments when
+    instantiating the form instance on given ``step``.
+
+    The default implementation::
+
+        def get_form_kwargs(self, step):
+            return {}
+
 .. method:: WizardView.get_context_data(form, **kwargs)
 
     Returns the template context for a step. You can overwrite this method
