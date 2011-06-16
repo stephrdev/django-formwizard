@@ -1,11 +1,13 @@
-from django.test import TestCase
-from django import http
-from django import forms
-from formwizard.forms import FormWizard, SessionFormWizard, CookieFormWizard
+from django import forms, http
 from django.conf import settings
-from formwizard.storage.session import SessionStorage
+from django.test import TestCase
+from django.template.response import TemplateResponse
 from django.utils.importlib import import_module
+
 from django.contrib.auth.models import User
+
+from formwizard.views import WizardView, SessionWizardView, CookieWizardView
+
 
 class DummyRequest(http.HttpRequest):
     def __init__(self, POST=None):
@@ -31,154 +33,170 @@ class Step2(forms.Form):
 class Step3(forms.Form):
     data = forms.CharField()
 
+class CustomKwargsStep1(Step1):
+    def __init__(self, test=None, *args, **kwargs):
+        self.test = test
+        return super(CustomKwargsStep1, self).__init__(*args, **kwargs)
+
 class UserForm(forms.ModelForm):
     class Meta:
         model = User
 
 UserFormSet = forms.models.modelformset_factory(User, form=UserForm, extra=2)
 
-class TestWizard(FormWizard):
-    pass
+class TestWizard(WizardView):
+    storage_name = 'formwizard.storage.session.SessionStorage'
+
+    def dispatch(self, request, *args, **kwargs):
+        response = super(TestWizard, self).dispatch(request, *args, **kwargs)
+        return response, self
+
+    def get_form_kwargs(self, step, *args, **kwargs):
+        kwargs = super(TestWizard, self).get_form_kwargs(step, *args, **kwargs)
+        if step == 'kwargs_test':
+            kwargs['test'] = True
+        return kwargs
 
 class FormTests(TestCase):
     def test_form_init(self):
-        testform = TestWizard('formwizard.storage.session.SessionStorage', [Step1, Step2])
-        self.assertEquals(testform.form_list, {u'0': Step1, u'1': Step2})
+        testform = TestWizard.get_initkwargs([Step1, Step2])
+        self.assertEqual(testform['form_list'], {u'0': Step1, u'1': Step2})
 
-        testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', Step1), ('step2', Step2)])
-        self.assertEquals(testform.form_list, {u'start': Step1, u'step2': Step2})
-        
-        testform = TestWizard('formwizard.storage.session.SessionStorage', [Step1, Step2, ('finish', Step3)])
-        self.assertEquals(testform.form_list, {u'0': Step1, u'1': Step2, u'finish': Step3})
+        testform = TestWizard.get_initkwargs([('start', Step1), ('step2', Step2)])
+        self.assertEqual(
+            testform['form_list'], {u'start': Step1, u'step2': Step2})
+
+        testform = TestWizard.get_initkwargs([Step1, Step2, ('finish', Step3)])
+        self.assertEqual(
+            testform['form_list'], {u'0': Step1, u'1': Step2, u'finish': Step3})
 
     def test_first_step(self):
         request = get_request()
 
-        testform = TestWizard('formwizard.storage.session.SessionStorage', [Step1, Step2])
-        response, storage = testform(request, testmode=True)
-        self.assertEquals(testform.determine_step(request, storage), u'0')
+        testform = TestWizard.as_view([Step1, Step2])
+        response, instance = testform(request)
+        self.assertEqual(instance.steps.current, u'0')
 
-        testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', Step1), ('step2', Step2)])
-        response, storage = testform(request, testmode=True)
+        testform = TestWizard.as_view([('start', Step1), ('step2', Step2)])
+        response, instance = testform(request)
 
-        self.assertEquals(testform.determine_step(request, storage), 'start')
+        self.assertEqual(instance.steps.current, 'start')
 
     def test_persistence(self):
-        request = get_request({'name': 'data1'})
+        testform = TestWizard.as_view([('start', Step1), ('step2', Step2)])
+        request = get_request({'test_wizard-current_step': 'start',
+                               'name': 'data1'})
+        response, instance = testform(request)
+        self.assertEqual(instance.steps.current, 'start')
 
-        testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', Step1), ('step2', Step2)])
-        response, storage = testform(request, testmode=True)
-        self.assertEquals(testform.determine_step(request, storage), 'start')
-        storage.set_current_step('step2')
+        instance.storage.current_step = 'step2'
 
-        testform2 = TestWizard('formwizard.storage.session.SessionStorage', [('start', Step1), ('step2', Step2)])
-        response, storage = testform2(request, testmode=True)
-        self.assertEquals(testform2.determine_step(request, storage), 'step2')
+        testform2 = TestWizard.as_view([('start', Step1), ('step2', Step2)])
+        request.POST = {'test_wizard-current_step': 'step2'}
+        response, instance = testform2(request)
+        self.assertEqual(instance.steps.current, 'step2')
 
     def test_form_condition(self):
         request = get_request()
 
-        testform = TestWizard('formwizard.storage.session.SessionStorage',
+        testform = TestWizard.as_view(
             [('start', Step1), ('step2', Step2), ('step3', Step3)],
-            condition_list={'step2': True})
-        response, storage = testform(request, testmode=True)
-        self.assertEquals(testform.get_next_step(request, storage), 'step2')
+            condition_dict={'step2': True})
+        response, instance = testform(request)
+        self.assertEqual(instance.get_next_step(), 'step2')
 
-        testform = TestWizard('formwizard.storage.session.SessionStorage',
+        testform = TestWizard.as_view(
             [('start', Step1), ('step2', Step2), ('step3', Step3)],
-            condition_list={'step2': False})
-        response, storage = testform(request, testmode=True)
-        self.assertEquals(testform.get_next_step(request, storage), 'step3')
+            condition_dict={'step2': False})
+        response, instance = testform(request)
+        self.assertEqual(instance.get_next_step(), 'step3')
 
-    def test_add_extra_context(self):
+    def test_form_kwargs(self):
         request = get_request()
 
-        testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', Step1), ('step2', Step2)])
+        testform = TestWizard.as_view([('start', Step1),
+            ('kwargs_test', CustomKwargsStep1)])
+        response, instance = testform(request)
 
-        response, storage = testform(request, extra_context={'key1': 'value1'}, testmode=True)
-        self.assertEqual(testform.get_extra_context(request, storage), {'key1': 'value1'})
-
-        request.method = 'POST'
-        response, storage = testform(request, extra_context={'key1': 'value1'}, testmode=True)
-        self.assertEqual(testform.get_extra_context(request, storage), {'key1': 'value1'})
+        self.assertEqual(instance.get_form_kwargs('start'), {})
+        self.assertEqual(instance.get_form_kwargs('kwargs_test'),
+            {'test': True})
+        self.assertEqual(instance.get_form('kwargs_test').test, True)
 
     def test_form_prefix(self):
         request = get_request()
 
-        testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', Step1), ('step2', Step2)])
-        response, storage = testform(request, testmode=True)
+        testform = TestWizard.as_view([('start', Step1), ('step2', Step2)])
+        response, instance = testform(request)
 
-        self.assertEqual(testform.get_form_prefix(request, storage), 'start')
-        self.assertEqual(testform.get_form_prefix(request, storage, 'another'), 'another')
+        self.assertEqual(instance.get_form_prefix(), 'start')
+        self.assertEqual(instance.get_form_prefix('another'), 'another')
 
     def test_form_initial(self):
         request = get_request()
 
-        testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', Step1), ('step2', Step2)], initial_list={'start': {'name': 'value1'}})
-        response, storage = testform(request, testmode=True)
+        testform = TestWizard.as_view([('start', Step1), ('step2', Step2)],
+            initial_dict={'start': {'name': 'value1'}})
+        response, instance = testform(request)
 
-        self.assertEqual(testform.get_form_initial(request, storage, 'start'), {'name': 'value1'})
-        self.assertEqual(testform.get_form_initial(request, storage, 'step2'), {})
+        self.assertEqual(instance.get_form_initial('start'), {'name': 'value1'})
+        self.assertEqual(instance.get_form_initial('step2'), {})
 
     def test_form_instance(self):
         request = get_request()
         the_instance = User()
-        testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', UserForm), ('step2', Step2)], instance_list={'start': the_instance})
-        response, storage = testform(request, testmode=True)
+        testform = TestWizard.as_view([('start', UserForm), ('step2', Step2)],
+            instance_dict={'start': the_instance})
+        response, instance = testform(request)
 
-        self.assertEqual(testform.get_form_instance(request, storage, 'start'), the_instance)
-        self.assertEqual(testform.get_form_instance(request, storage, 'non_exist_instance'), None)
+        self.assertEqual(
+            instance.get_form_instance('start'),
+            the_instance)
+        self.assertEqual(
+            instance.get_form_instance('non_exist_instance'),
+            None)
 
     def test_formset_instance(self):
         request = get_request()
-        the_instance1, created = User.objects.get_or_create(username='testuser1')
-        the_instance2, created = User.objects.get_or_create(username='testuser2')
-        testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', UserFormSet), ('step2', Step2)], instance_list={'start': User.objects.filter(username='testuser1')})
-        response, storage = testform(request, testmode=True)
+        the_instance1, created = User.objects.get_or_create(
+            username='testuser1')
+        the_instance2, created = User.objects.get_or_create(
+            username='testuser2')
+        testform = TestWizard.as_view([('start', UserFormSet), ('step2', Step2)],
+            instance_dict={'start': User.objects.filter(username='testuser1')})
+        response, instance = testform(request)
 
-        self.assertEqual(list(testform.get_form_instance(request, storage, 'start')), [the_instance1])
-        self.assertEqual(testform.get_form_instance(request, storage, 'non_exist_instance'), None)
+        self.assertEqual(list(instance.get_form_instance('start')), [the_instance1])
+        self.assertEqual(instance.get_form_instance('non_exist_instance'), None)
 
-        self.assertEqual(testform.get_form(request, storage).initial_form_count(), 1)
+        self.assertEqual(instance.get_form().initial_form_count(), 1)
 
     def test_done(self):
         request = get_request()
 
-        testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', Step1), ('step2', Step2)])
-        response, storage = testform(request, testmode=True)
+        testform = TestWizard.as_view([('start', Step1), ('step2', Step2)])
+        response, instance = testform(request)
 
-        self.assertRaises(NotImplementedError, testform.done, request, storage, None)
+        self.assertRaises(NotImplementedError, instance.done, None)
 
     def test_revalidation(self):
         request = get_request()
 
-        testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', Step1), ('step2', Step2)])
-        response, storage = testform(request, testmode=True)
-        testform.render_done(request, storage, None)
-        self.assertEqual(storage.get_current_step(), 'start')
+        testform = TestWizard.as_view([('start', Step1), ('step2', Step2)])
+        response, instance = testform(request)
+        instance.render_done(None)
+        self.assertEqual(instance.storage.current_step, 'start')
 
-    def test_form_refresh(self):
-        testform = TestWizard('formwizard.storage.session.SessionStorage', [('start', Step1), ('step2', UserFormSet)])
-
-        request = get_request({'start-name': 'foo'})
-        request.method = 'POST'
-
-        response, storage = testform(request, testmode=True)
-        self.assertEqual(storage.get_current_step(), 'step2')
-        # refresh form
-        response, storage = testform(request, testmode=True)
-        self.assertEqual(storage.get_current_step(), 'step2')
 
 class SessionFormTests(TestCase):
     def test_init(self):
         request = get_request()
-        testform = SessionFormWizard([('start', Step1)])
+        testform = SessionWizardView.as_view([('start', Step1)])
+        self.assertTrue(isinstance(testform(request), TemplateResponse))
 
-        self.assertEqual(type(testform(request)), http.HttpResponse)
 
 class CookieFormTests(TestCase):
     def test_init(self):
         request = get_request()
-        testform = CookieFormWizard([('start', Step1)])
-
-        self.assertEqual(type(testform(request)), http.HttpResponse)
+        testform = CookieWizardView.as_view([('start', Step1)])
+        self.assertTrue(isinstance(testform(request), TemplateResponse))
