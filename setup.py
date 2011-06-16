@@ -14,7 +14,10 @@ setup(
     url='http://github.com/stephrdev/django-formwizard/',
     packages=find_packages(exclude=['test_project', 'test_project.*']),
     package_data = {
-        'formwizard': ['templates/*/*.html'],
+        'formwizard': [
+            'templates/*/*.html',
+            'tests/wizardtests/templates/*.html'
+        ],
     },
     classifiers=[
         'Development Status :: 4 - Beta',
