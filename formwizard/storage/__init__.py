@@ -1,15 +1,9 @@
-from django.core.exceptions import ImproperlyConfigured
+from django.utils.importlib import import_module
 
-try:
-    from importlib import import_module
-except ImportError:
-    from django.utils.importlib import import_module
+from formwizard.storage.base import BaseStorage
+from formwizard.storage.exceptions import (MissingStorageModule,
+    MissingStorageClass, NoFileStorageConfigured)
 
-class MissingStorageModuleException(ImproperlyConfigured):
-    pass
-
-class MissingStorageClassException(ImproperlyConfigured):
-    pass
 
 def get_storage(path, *args, **kwargs):
     i = path.rfind('.')
@@ -17,9 +11,11 @@ def get_storage(path, *args, **kwargs):
     try:
         mod = import_module(module)
     except ImportError, e:
-        raise MissingStorageModuleException('Error loading storage %s: "%s"' % (module, e))
+        raise MissingStorageModule(
+            'Error loading storage %s: "%s"' % (module, e))
     try:
         storage_class = getattr(mod, attr)
     except AttributeError:
-        raise MissingStorageClassException('Module "%s" does not define a storage named "%s"' % (module, attr))
+        raise MissingStorageClass(
+            'Module "%s" does not define a storage named "%s"' % (module, attr))
     return storage_class(*args, **kwargs)

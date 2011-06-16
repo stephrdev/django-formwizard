@@ -1,11 +1,15 @@
+import tempfile
+
 from django import forms
-from formwizard.forms import FormWizard
+from django.core.files.storage import FileSystemStorage
+from django.forms.formsets import formset_factory
 from django.http import HttpResponse
 from django.template import Template, Context
+
 from django.contrib.auth.models import User
-from django.forms.formsets import formset_factory
-from django.core.files.storage import FileSystemStorage
-import tempfile
+
+from formwizard.views import WizardView
+
 
 temp_storage_location = tempfile.mkdtemp()
 temp_storage = FileSystemStorage(location=temp_storage_location)
@@ -25,19 +29,29 @@ class Page3(forms.Form):
 
 Page4 = formset_factory(Page3, extra=2)
 
-class ContactWizard(FormWizard):
+class ContactWizard(WizardView):
     file_storage = temp_storage
 
-    def done(self, request, storage, form_list, **kwargs):
-        c = Context({'form_list': [x.cleaned_data for x in form_list], 'all_cleaned_data': self.get_all_cleaned_data(request, storage)})
-        for form in self.form_list.keys():
-            c[form] = self.get_cleaned_data_for_step(request, storage, form)
+    def done(self, form_list, **kwargs):
+        c = Context({
+            'form_list': [x.cleaned_data for x in form_list],
+            'all_cleaned_data': self.get_all_cleaned_data()
+        })
 
-        c['this_will_fail'] = self.get_cleaned_data_for_step(request, storage, 'this_will_fail')
+        for form in self.form_list.keys():
+            c[form] = self.get_cleaned_data_for_step(form)
+
+        c['this_will_fail'] = self.get_cleaned_data_for_step('this_will_fail')
         return HttpResponse(Template('').render(c))
 
-    def get_template_context(self, request, storage, form):
-        context = super(ContactWizard, self).get_template_context(request, storage, form)
-        if storage.get_current_step() == 'form2':
+    def get_context_data(self, form, **kwargs):
+        context = super(ContactWizard, self).get_context_data(form, **kwargs)
+        if self.storage.current_step == 'form2':
             context.update({'another_var': True})
         return context
+
+class SessionContactWizard(ContactWizard):
+    storage_name = 'formwizard.storage.session.SessionStorage'
+
+class CookieContactWizard(ContactWizard):
+    storage_name = 'formwizard.storage.cookie.CookieStorage'

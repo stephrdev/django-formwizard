@@ -1,8 +1,10 @@
+from datetime import datetime
+
 from django.http import HttpRequest
 from django.conf import settings
-from django.utils.importlib import import_module
 from django.contrib.auth.models import User
-from datetime import datetime
+from django.utils.importlib import import_module
+
 
 def get_request():
     request = HttpRequest()
@@ -19,23 +21,26 @@ class TestStorage(object):
         storage = self.get_storage()('wizard1', request, None)
         my_step = 2
 
-        self.assertEqual(storage.get_current_step(), None)
+        self.assertEqual(storage.current_step, None)
 
-        storage.set_current_step(my_step)
-        self.assertEqual(storage.get_current_step(), my_step)
+        storage.current_step = my_step
+        self.assertEqual(storage.current_step, my_step)
 
         storage.reset()
-        self.assertEqual(storage.get_current_step(), None)
+        self.assertEqual(storage.current_step, None)
 
-        storage.set_current_step(my_step)
+        storage.current_step = my_step
         storage2 = self.get_storage()('wizard2', request, None)
-        self.assertEqual(storage2.get_current_step(), None)
+        self.assertEqual(storage2.current_step, None)
 
     def test_step_data(self):
         request = get_request()
         storage = self.get_storage()('wizard1', request, None)
         step1 = 'start'
-        step_data1 = {'field1': 'data1', 'field2': 'data2', 'field3': datetime.now(), 'field4': self.testuser}
+        step_data1 = {'field1': 'data1',
+                      'field2': 'data2',
+                      'field3': datetime.now(),
+                      'field4': self.testuser}
 
         self.assertEqual(storage.get_step_data(step1), None)
 
@@ -52,16 +57,19 @@ class TestStorage(object):
     def test_extra_context(self):
         request = get_request()
         storage = self.get_storage()('wizard1', request, None)
-        extra_context = {'key1': 'data1', 'key2': 'data2', 'key3': datetime.now(), 'key4': self.testuser}
+        extra_context = {'key1': 'data1',
+                         'key2': 'data2',
+                         'key3': datetime.now(),
+                         'key4': self.testuser}
 
-        self.assertEqual(storage.get_extra_context_data(), {})
+        self.assertEqual(storage.extra_data, {})
 
-        storage.set_extra_context_data(extra_context)
-        self.assertEqual(storage.get_extra_context_data(), extra_context)
+        storage.extra_data = extra_context
+        self.assertEqual(storage.extra_data, extra_context)
 
         storage.reset()
-        self.assertEqual(storage.get_extra_context_data(), {})
+        self.assertEqual(storage.extra_data, {})
 
-        storage.set_extra_context_data(extra_context)
+        storage.extra_data = extra_context
         storage2 = self.get_storage()('wizard2', request, None)
-        self.assertEqual(storage2.get_extra_context_data(), {})
+        self.assertEqual(storage2.extra_data, {})
